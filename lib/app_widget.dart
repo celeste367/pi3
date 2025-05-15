@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:pi3/imagens.dart'; // HomePage
-import 'package:pi3/preco.dart'; // EnergyMonitorPage
-import 'package:pi3/cosumo.dart';
-import 'package:pi3/videos.dart'; // SplashScreen
-
-void main() {
-  runApp(const AppWidget());
-}
+import 'splash_screen.dart';
+import 'lucro.dart';
+import 'home_page.dart';
+import 'videos.dart';
 
 class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
@@ -14,21 +10,26 @@ class AppWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Monitor de Energia Comunitário',
+      title: 'Gerenciamento de Supermercado',
       theme: ThemeData(
         primarySwatch: Colors.teal,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      initialRoute: '/', // Rota inicial
+      initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(), // Splash Screen
-        '/home': (context) => HomePage(), // Página principal
-        '/videos': (context) => const EnergySavingVideosPage(),
-        '/energy':
-            (context) => EnergyMonitorPage(
-              currentConsumption: 150,
-            ), // Página de monitoramento
+        '/': (context) => const SplashScreen(),
+        '/home': (context) => HomePage(),
+        '/videos': (context) => const BusinessVideosPage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/lucro') {
+          final double totalVendas = settings.arguments as double;
+          return MaterialPageRoute(
+            builder: (context) => LucroPage(totalVendas: totalVendas),
+          );
+        }
+        return null; // Route not found
       },
     );
   }

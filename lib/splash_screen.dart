@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import 'package:lottie/lottie.dart';
+import 'lucro.dart';
+import 'home_page.dart';
+import 'videos.dart';
 
+// SplashScreen - Tela inicial
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({Key? key}) : super(key: key);
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  _SplashScreenState createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -19,11 +24,6 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
-  void irParaInicio() {
-    // Navegar manualmente para a HomePage
-    Navigator.pushReplacementNamed(context, '/home');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Lottie.network(
-              'https://lottie.host/92636d3c-fd69-42cc-8f39-6a779b776a4d/aCciE5Vl3G.json',
+              'https://lottie.host/48459dc8-c0a3-4c14-99fd-6fee1777f4ed/QFesrhW7Jc.json',
               width: 200,
               height: 200,
             ),
@@ -41,7 +41,9 @@ class _SplashScreenState extends State<SplashScreen> {
             CircularProgressIndicator(color: Colors.white, strokeWidth: 5),
             SizedBox(height: 30),
             ElevatedButton.icon(
-              onPressed: irParaInicio,
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/home');
+              },
               icon: Icon(Icons.home),
               label: Text('Ir para Início'),
               style: ElevatedButton.styleFrom(

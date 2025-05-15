@@ -1,79 +1,89 @@
 import 'package:flutter/material.dart';
 
-class EnergyMonitorPage extends StatefulWidget {
-  final double currentConsumption;
+// Classe para armazenar as informações de lucro
+class LucroSupermercado {
+  final double vendasDiarias;
+  final double lucroDiario;
+  final double lucroMensal;
+  final double lucroAnual;
 
-  // Recebe o consumo atual da página inicial
-  EnergyMonitorPage({required this.currentConsumption});
-
-  @override
-  _EnergyMonitorPageState createState() => _EnergyMonitorPageState();
+  LucroSupermercado({
+    required this.vendasDiarias,
+    required this.lucroDiario,
+    required this.lucroMensal,
+    required this.lucroAnual,
+  });
 }
 
-class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
-  late double energyConsumption;
-  String? selectedState;
-  GastoEnergia? gasto;
+class LucroPage extends StatefulWidget {
+  final double totalVendas;
 
-  // Exemplo de dados de preços de energia para todos os estados
-  final Map<String, double> energyPrices = {
-    'AC': 0.65,
-    'AL': 0.58,
-    'AP': 0.60,
-    'AM': 0.70,
-    'BA': 0.59,
-    'CE': 0.52,
-    'DF': 0.55,
-    'ES': 0.58,
-    'GO': 0.55,
-    'MA': 0.60,
-    'MT': 0.65,
-    'MS': 0.63,
-    'MG': 0.53,
-    'PA': 0.68,
-    'PB': 0.57,
-    'PR': 0.60,
-    'PE': 0.58,
-    'PI': 0.62,
-    'RJ': 0.55,
-    'RN': 0.57,
-    'RS': 0.60,
-    'RO': 0.68,
-    'RR': 0.72,
-    'SC': 0.60,
-    'SP': 0.60,
-    'SE': 0.58,
-    'TO': 0.65,
+  LucroPage({required this.totalVendas});
+
+  @override
+  _LucroPageState createState() => _LucroPageState();
+}
+
+class _LucroPageState extends State<LucroPage> {
+  late double totalVendas;
+  String? selectedState;
+  LucroSupermercado? lucro;
+
+  final Map<String, double> custoUnitarioPorEstado = {
+    'AC': 0.45,
+    'AL': 0.40,
+    'AP': 0.42,
+    'AM': 0.50,
+    'BA': 0.43,
+    'CE': 0.38,
+    'DF': 0.41,
+    'ES': 0.39,
+    'GO': 0.42,
+    'MA': 0.47,
+    'MT': 0.45,
+    'MS': 0.44,
+    'MG': 0.39,
+    'PA': 0.49,
+    'PB': 0.41,
+    'PR': 0.43,
+    'PE': 0.42,
+    'PI': 0.46,
+    'RJ': 0.40,
+    'RN': 0.41,
+    'RS': 0.44,
+    'RO': 0.48,
+    'RR': 0.50,
+    'SC': 0.43,
+    'SP': 0.42,
+    'SE': 0.41,
+    'TO': 0.45,
   };
 
   @override
   void initState() {
     super.initState();
-    energyConsumption =
-        widget.currentConsumption; // Inicializa com o valor vindo da HomePage
+    totalVendas = widget.totalVendas;
   }
 
-  // Função para calcular o gasto de energia
-  GastoEnergia calcularGastoEnergia(String state, double consumption) {
-    double pricePerKWh = energyPrices[state] ?? 0.60;
-    double dailyConsumption = consumption / 30;
-    double dailyCost = dailyConsumption * pricePerKWh;
-    double monthlyCost = dailyCost * 30;
-    double annualCost = monthlyCost * 12;
+  LucroSupermercado calcularLucro(String estado, double vendasTotais) {
+    double custoMedio = custoUnitarioPorEstado[estado] ?? 0.42;
+    double vendasDiarias = vendasTotais / 30;
+    double lucroDiario = vendasDiarias * (1 - custoMedio);
+    double lucroMensal = lucroDiario * 30;
+    double lucroAnual = lucroMensal * 12;
 
-    return GastoEnergia(
-      consumoDiario: dailyConsumption,
-      custoDiario: dailyCost,
-      custoMensal: monthlyCost,
-      custoAnual: annualCost,
+    return LucroSupermercado(
+      vendasDiarias: vendasDiarias,
+      lucroDiario: lucroDiario,
+      lucroMensal: lucroMensal,
+      lucroAnual: lucroAnual,
     );
   }
 
-  // Função chamada ao clicar no botão "Calcular Custos"
-  void calcularGasto() {
+  void calcular() {
     if (selectedState != null) {
       setState(() {
-        gasto = calcularGastoEnergia(selectedState!, energyConsumption);
+        lucro = calcularLucro(selectedState!, totalVendas);
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,26 +96,26 @@ class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Monitor de Energia Comunitário'),
-        backgroundColor: Colors.teal,
+        title: Text('Estimativa de Lucro'),
+        backgroundColor: Colors.green,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: ListView(
           children: [
             Text(
-              'Consumo Mensal: ${energyConsumption.toStringAsFixed(2)} kWh',
+              'Vendas Mensais: R\$ ${totalVendas.toStringAsFixed(2)}',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Slider(
-              value: energyConsumption,
-              min: 0,
-              max: 1000,
+              value: totalVendas,
+              min: 1,
+              max: 50000,
               divisions: 100,
-              label: '${energyConsumption.toStringAsFixed(2)} kWh',
+              label: 'R\$ ${totalVendas.toStringAsFixed(0)}',
               onChanged: (value) {
                 setState(() {
-                  energyConsumption = value;
+                  totalVendas = value;
                 });
               },
             ),
@@ -119,25 +129,24 @@ class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
                 });
               },
               items:
-                  energyPrices.keys.map((String state) {
+                  custoUnitarioPorEstado.keys.map((String estado) {
                     return DropdownMenuItem<String>(
-                      value: state,
-                      child: Text(state),
+                      value: estado,
+                      child: Text(estado),
                     );
                   }).toList(),
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: calcularGasto,
-              child: Text('Calcular Custos'),
+              onPressed: calcular,
+              child: Text('Calcular Lucro'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
             SizedBox(height: 20),
-            // Exibe a tabela apenas após o cálculo do gasto
-            if (gasto != null)
+            if (lucro != null)
               DataTable(
                 columnSpacing: 12,
                 columns: const [
@@ -163,33 +172,33 @@ class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
                   ),
                   DataRow(
                     cells: [
-                      DataCell(Text('Consumo Diário')),
+                      DataCell(Text('Vendas Diárias')),
                       DataCell(
-                        Text('${gasto!.consumoDiario.toStringAsFixed(2)} kWh'),
+                        Text('R\$ ${lucro!.vendasDiarias.toStringAsFixed(2)}'),
                       ),
                     ],
                   ),
                   DataRow(
                     cells: [
-                      DataCell(Text('Custo Diário')),
+                      DataCell(Text('Lucro Diário')),
                       DataCell(
-                        Text('R\$ ${gasto!.custoDiario.toStringAsFixed(2)}'),
+                        Text('R\$ ${lucro!.lucroDiario.toStringAsFixed(2)}'),
                       ),
                     ],
                   ),
                   DataRow(
                     cells: [
-                      DataCell(Text('Custo Mensal')),
+                      DataCell(Text('Lucro Mensal')),
                       DataCell(
-                        Text('R\$ ${gasto!.custoMensal.toStringAsFixed(2)}'),
+                        Text('R\$ ${lucro!.lucroMensal.toStringAsFixed(2)}'),
                       ),
                     ],
                   ),
                   DataRow(
                     cells: [
-                      DataCell(Text('Custo Anual')),
+                      DataCell(Text('Lucro Anual')),
                       DataCell(
-                        Text('R\$ ${gasto!.custoAnual.toStringAsFixed(2)}'),
+                        Text('R\$ ${lucro!.lucroAnual.toStringAsFixed(2)}'),
                       ),
                     ],
                   ),
@@ -200,7 +209,7 @@ class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
               onPressed: () {
                 Navigator.pushReplacementNamed(context, '/');
               },
-              child: Text('Ir para Página Inicial'),
+              child: Text('Voltar para Início'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -211,18 +220,4 @@ class _EnergyMonitorPageState extends State<EnergyMonitorPage> {
       ),
     );
   }
-}
-
-class GastoEnergia {
-  final double consumoDiario;
-  final double custoDiario;
-  final double custoMensal;
-  final double custoAnual;
-
-  GastoEnergia({
-    required this.consumoDiario,
-    required this.custoDiario,
-    required this.custoMensal,
-    required this.custoAnual,
-  });
 }

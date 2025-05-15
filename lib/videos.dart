@@ -1,38 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-class EnergySavingVideosPage extends StatefulWidget {
-  const EnergySavingVideosPage({super.key});
+class BusinessVideosPage extends StatefulWidget {
+  const BusinessVideosPage({super.key});
 
   @override
-  _EnergySavingVideosPageState createState() => _EnergySavingVideosPageState();
+  _BusinessVideosPageState createState() => _BusinessVideosPageState();
 }
 
-class _EnergySavingVideosPageState extends State<EnergySavingVideosPage> {
+class _BusinessVideosPageState extends State<BusinessVideosPage> {
   late VideoPlayerController _controller;
   bool _isVideoPlaying = false;
 
-  // Carregando o vídeo do URL (ou você pode usar um arquivo local)
   @override
   void initState() {
     super.initState();
+
+    // Substitua este link por um vídeo real sobre gestão empresarial ou empreendedorismo
     _controller = VideoPlayerController.network(
-        'https://www.example.com/path_to_your_video.mp4', // Substitua com o link do vídeo real
+        'https://www.example.com/path_to_business_video.mp4', // Coloque um link válido aqui
       )
       ..initialize().then((_) {
-        // Garantir que o vídeo esteja pronto antes de mostrar o player
         setState(() {});
       });
   }
 
-  // Limpar o controlador quando o widget for destruído
   @override
   void dispose() {
     super.dispose();
     _controller.dispose();
   }
 
-  // Alternar entre pausar e reproduzir o vídeo
   void _togglePlayPause() {
     setState(() {
       if (_isVideoPlaying) {
@@ -48,21 +46,20 @@ class _EnergySavingVideosPageState extends State<EnergySavingVideosPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Vídeos de Economia de Energia"),
-        backgroundColor: Colors.teal,
+        title: const Text("Vídeos sobre Gestão e Empreendedorismo"),
+        backgroundColor: Colors.blueGrey,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'Aprenda como economizar energia e os benefícios desse comportamento!',
+              'Aprenda sobre gestão de negócios, estratégias de liderança e como empreender com sucesso!',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
 
-            // Verifica se o vídeo foi carregado e exibe o player
             _controller.value.isInitialized
                 ? Column(
                   children: [
@@ -74,21 +71,22 @@ class _EnergySavingVideosPageState extends State<EnergySavingVideosPage> {
                       icon: Icon(
                         _isVideoPlaying ? Icons.pause : Icons.play_arrow,
                         size: 50,
-                        color: Colors.teal,
+                        color: Colors.blueGrey,
                       ),
                       onPressed: _togglePlayPause,
                     ),
                   ],
                 )
-                : const CircularProgressIndicator(), // Exibe um indicador de carregamento enquanto o vídeo não está pronto
+                : const CircularProgressIndicator(),
 
             const SizedBox(height: 30),
 
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Voltar para a página anterior
+                Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueGrey,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 30,
                   vertical: 12,
