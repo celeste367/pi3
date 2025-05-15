@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'lucro.dart';
 import 'videos.dart';
 
-// Classe Produto
 class Produto {
   final String nome;
   final double preco;
   double estoque;
+  double vendas;
 
-  Produto({required this.nome, required this.preco, required this.estoque});
+  Produto({
+    required this.nome,
+    required this.preco,
+    required this.estoque,
+    this.vendas = 0,
+  });
 }
 
 class HomePage extends StatefulWidget {
@@ -19,22 +24,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Catálogo de produtos
   List<Produto> produtos = [
-    Produto(nome: 'Arroz', preco: 5.99, estoque: 150.0),
-    Produto(nome: 'Feijão', preco: 4.99, estoque: 200.0),
-    Produto(nome: 'Óleo', preco: 7.99, estoque: 120.0),
-    Produto(nome: 'Açúcar', preco: 3.49, estoque: 180.0),
-    Produto(nome: 'Café', preco: 9.99, estoque: 160.0),
+    Produto(nome: 'Arroz', preco: 5.00, estoque: 1500),
+    Produto(nome: 'Feijão', preco: 4.00, estoque: 2000),
+    Produto(nome: 'Óleo', preco: 7.00, estoque: 1200),
+    Produto(nome: 'Açúcar', preco: 3.40, estoque: 1800),
+    Produto(nome: 'Café', preco: 9.00, estoque: 1600),
   ];
 
   bool showSuggestions = false;
   String? selectedState;
 
-  void updateStock(double value) {
+  void venderProduto(int index) {
     setState(() {
-      // Atualiza o estoque para o valor fornecido
+      if (produtos[index].estoque > 0) {
+        produtos[index].estoque--;
+        produtos[index].vendas++;
+      }
     });
+  }
+
+  double calcularTotalVendas() {
+    return produtos.fold(
+      0.0,
+      (sum, produto) => sum + (produto.preco * produto.vendas),
+    );
+  }
+
+  double calcularGastosOperacionais(double totalVendas) {
+    return totalVendas * 0.10;
   }
 
   List<String> getStockRecommendations() {
@@ -56,21 +74,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void comprarProduto(int index) {
-    setState(() {
-      if (produtos[index].estoque > 0) {
-        produtos[index].estoque--;
-      }
-    });
-  }
-
-  double calcularTotalVendas() {
-    return produtos.fold(
-      0.0,
-      (sum, produto) => sum + (produto.preco * (150 - produto.estoque)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,7 +85,6 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(20.0),
         child: ListView(
           children: [
-            // Dropdown para selecionar o estado
             if (selectedState == null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +142,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               )
             else ...[
-              // Exibição do catálogo de produtos, após selecionar o estado
               Text(
                 'Catálogo de Produtos:',
                 style: const TextStyle(
@@ -150,7 +151,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-              // Exibição dos produtos
               ListView.builder(
                 shrinkWrap: true,
                 itemCount: produtos.length,
@@ -163,12 +163,17 @@ class _HomePageState extends State<HomePage> {
                       subtitle: Text(
                         'Preço: R\$ ${produto.preco.toStringAsFixed(2)}',
                       ),
-                      trailing: Text(
-                        'Estoque: ${produto.estoque.toStringAsFixed(0)}',
+                      trailing: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Estoque: ${produto.estoque.toStringAsFixed(0)}',
+                          ),
+                          Text('Vendas: ${produto.vendas.toStringAsFixed(0)}'),
+                        ],
                       ),
                       onTap: () {
-                        // Quando o produto é selecionado, diminui o estoque
-                        comprarProduto(index);
+                        venderProduto(index);
                       },
                     ),
                   );
@@ -176,7 +181,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 30),
 
-              // Botão para visualizar as sugestões de estoque
               ElevatedButton(
                 onPressed: () {
                   setState(() {
@@ -196,7 +200,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 10),
 
-              // Exibição das dicas de estoque
               if (showSuggestions)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,14 +220,20 @@ class _HomePageState extends State<HomePage> {
                 ),
               const SizedBox(height: 30),
 
-              // Botão: Cálculo de lucro estimado
               ElevatedButton.icon(
                 onPressed: () {
                   double totalVendas = calcularTotalVendas();
+                  double gastosOperacionais = calcularGastosOperacionais(
+                    totalVendas,
+                  );
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => LucroPage(totalVendas: totalVendas),
+                      builder:
+                          (_) => LucroPage(
+                            totalVendas: totalVendas,
+                            gastosOperacionais: gastosOperacionais,
+                          ),
                     ),
                   );
                 },
@@ -241,7 +250,6 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 20),
 
-              // Botão: Ver vídeos de gestão
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(

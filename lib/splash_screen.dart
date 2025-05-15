@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'package:lottie/lottie.dart';
-import 'lucro.dart';
-import 'home_page.dart';
-import 'videos.dart';
 
-// SplashScreen - Tela inicial
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -17,9 +12,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navegar automaticamente após 3 segundos
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(Duration(seconds: 3));
+      await Future.delayed(Duration(seconds: 5));
       Navigator.pushReplacementNamed(context, '/home');
     });
   }

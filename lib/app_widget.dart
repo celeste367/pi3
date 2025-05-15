@@ -26,10 +26,14 @@ class AppWidget extends StatelessWidget {
         if (settings.name == '/lucro') {
           final double totalVendas = settings.arguments as double;
           return MaterialPageRoute(
-            builder: (context) => LucroPage(totalVendas: totalVendas),
+            builder:
+                (context) => LucroPage(
+                  totalVendas: totalVendas,
+                  gastosOperacionais: 0.10,
+                ),
           );
         }
-        return null; // Route not found
+        return null;
       },
     );
   }

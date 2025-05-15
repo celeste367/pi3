@@ -1,24 +1,31 @@
 import 'package:flutter/material.dart';
 
-// Classe para armazenar as informações de lucro
 class LucroSupermercado {
   final double vendasDiarias;
   final double lucroDiario;
   final double lucroMensal;
   final double lucroAnual;
+  final double estoqueRestante; // Estoque restante baseado nas vendas
+  final double estoqueTotal; // Novo campo para o estoque total
 
   LucroSupermercado({
     required this.vendasDiarias,
     required this.lucroDiario,
     required this.lucroMensal,
     required this.lucroAnual,
+    required this.estoqueRestante,
+    required this.estoqueTotal, // Inicialização do estoque total
   });
 }
 
 class LucroPage extends StatefulWidget {
   final double totalVendas;
 
-  LucroPage({required this.totalVendas});
+  const LucroPage({
+    super.key,
+    required this.totalVendas,
+    required double gastosOperacionais,
+  });
 
   @override
   _LucroPageState createState() => _LucroPageState();
@@ -66,17 +73,27 @@ class _LucroPageState extends State<LucroPage> {
   }
 
   LucroSupermercado calcularLucro(String estado, double vendasTotais) {
-    double custoMedio = custoUnitarioPorEstado[estado] ?? 0.42;
+    double custoMedio =
+        custoUnitarioPorEstado[estado] ??
+        0.42; // Valor padrão para custoUnitario
     double vendasDiarias = vendasTotais / 30;
     double lucroDiario = vendasDiarias * (1 - custoMedio);
     double lucroMensal = lucroDiario * 30;
     double lucroAnual = lucroMensal * 12;
+
+    // Definindo o estoque total e calculando o estoque restante
+    double estoqueTotal = 10000; // Estoque total fixo (pode ser alterado)
+    double estoqueRestante =
+        estoqueTotal -
+        vendasTotais; // Estoque restante baseado nas vendas totais
 
     return LucroSupermercado(
       vendasDiarias: vendasDiarias,
       lucroDiario: lucroDiario,
       lucroMensal: lucroMensal,
       lucroAnual: lucroAnual,
+      estoqueRestante: estoqueRestante,
+      estoqueTotal: estoqueTotal, // Passando o valor do estoque total
     );
   }
 
@@ -109,8 +126,8 @@ class _LucroPageState extends State<LucroPage> {
             ),
             Slider(
               value: totalVendas,
-              min: 1,
-              max: 50000,
+              min: 1.00,
+              max: 50000.00,
               divisions: 100,
               label: 'R\$ ${totalVendas.toStringAsFixed(0)}',
               onChanged: (value) {
@@ -167,7 +184,7 @@ class _LucroPageState extends State<LucroPage> {
                   DataRow(
                     cells: [
                       DataCell(Text('Estado')),
-                      DataCell(Text(selectedState!)),
+                      DataCell(Text(selectedState ?? 'Não selecionado')),
                     ],
                   ),
                   DataRow(
@@ -199,6 +216,24 @@ class _LucroPageState extends State<LucroPage> {
                       DataCell(Text('Lucro Anual')),
                       DataCell(
                         Text('R\$ ${lucro!.lucroAnual.toStringAsFixed(2)}'),
+                      ),
+                    ],
+                  ),
+                  DataRow(
+                    cells: [
+                      DataCell(Text('Estoque Total')),
+                      DataCell(
+                        Text('R\$ ${lucro!.estoqueTotal.toStringAsFixed(2)}'),
+                      ),
+                    ],
+                  ),
+                  DataRow(
+                    cells: [
+                      DataCell(Text('Estoque Restante')),
+                      DataCell(
+                        Text(
+                          'R\$ ${lucro!.estoqueRestante.toStringAsFixed(2)}',
+                        ),
                       ),
                     ],
                   ),

@@ -16,9 +16,9 @@ class _BusinessVideosPageState extends State<BusinessVideosPage> {
   void initState() {
     super.initState();
 
-    // Substitua este link por um vídeo real sobre gestão empresarial ou empreendedorismo
+    // ignore: deprecated_member_use
     _controller = VideoPlayerController.network(
-        'https://www.example.com/path_to_business_video.mp4', // Coloque um link válido aqui
+        'https://www.youtube.com/watch?v=gSgh4S0F2hw',
       )
       ..initialize().then((_) {
         setState(() {});
