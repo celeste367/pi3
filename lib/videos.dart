@@ -45,6 +45,7 @@ class _BusinessVideosPageState extends State<BusinessVideosPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey,
       appBar: AppBar(
         title: const Text("Vídeos sobre Gestão e Empreendedorismo"),
         backgroundColor: Colors.blueGrey,
