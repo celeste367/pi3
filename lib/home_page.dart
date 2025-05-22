@@ -34,12 +34,18 @@ class _HomePageState extends State<HomePage> {
 
   bool showSuggestions = false;
   String? selectedState;
+  double metrosQuadrados = 100.0; // Valor padrão para metros quadrados
 
-  void venderProduto(int index) {
+  void venderProduto(int index, bool isIncrement) {
     setState(() {
-      if (produtos[index].estoque > 0) {
-        produtos[index].estoque--;
-        produtos[index].vendas++;
+      if (isIncrement) {
+        produtos[index].estoque++;
+        produtos[index].vendas--;
+      } else {
+        if (produtos[index].estoque > 0) {
+          produtos[index].estoque--;
+          produtos[index].vendas++;
+        }
       }
     });
   }
@@ -72,6 +78,15 @@ class _HomePageState extends State<HomePage> {
         "Priorize compra dos itens mais vendidos.",
       ];
     }
+  }
+
+  double calcularLucroEstimado(double totalVendas, double gastosOperacionais) {
+    double lucroBruto = totalVendas - gastosOperacionais;
+    double lucroFinal =
+        lucroBruto -
+        (metrosQuadrados *
+            0.5); // Exemplo de custo adicional por metro quadrado
+    return lucroFinal;
   }
 
   @override
@@ -151,7 +166,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
-
               ListView.builder(
                 shrinkWrap: true,
                 itemCount: produtos.length,
@@ -161,27 +175,40 @@ class _HomePageState extends State<HomePage> {
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
                       title: Text(produto.nome),
-                      subtitle: Text(
-                        'Preço: R\$ ${produto.preco.toStringAsFixed(2)}',
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Preço: R\$ ${produto.preco.toStringAsFixed(2)}',
+                          ),
+                          Text('Vendas: ${produto.vendas.toStringAsFixed(0)}'),
+                          Text(
+                            'Estoque: ${produto.estoque.toStringAsFixed(0)}',
+                          ),
+                        ],
                       ),
                       trailing: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            'Estoque: ${produto.estoque.toStringAsFixed(0)}',
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.remove),
+                                onPressed: () => venderProduto(index, true),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.add),
+                                onPressed: () => venderProduto(index, false),
+                              ),
+                            ],
                           ),
-                          Text('Vendas: ${produto.vendas.toStringAsFixed(0)}'),
                         ],
                       ),
-                      onTap: () {
-                        venderProduto(index);
-                      },
                     ),
                   );
                 },
               ),
               const SizedBox(height: 30),
-
               ElevatedButton(
                 onPressed: () {
                   setState(() {
@@ -200,7 +227,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 10),
-
               if (showSuggestions)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,13 +246,27 @@ class _HomePageState extends State<HomePage> {
                           .toList(),
                 ),
               const SizedBox(height: 30),
-
+              // Campo para inserir os metros quadrados
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Metros Quadrados da Estrutura',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    metrosQuadrados = double.tryParse(value) ?? metrosQuadrados;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () {
                   double totalVendas = calcularTotalVendas();
                   double gastosOperacionais = calcularGastosOperacionais(
                     totalVendas,
                   );
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -250,7 +290,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
-
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
