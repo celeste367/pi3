@@ -1,30 +1,45 @@
 import 'package:flutter/material.dart';
+import 'dart:math'; // Para o Random
 
-class LucroSupermercado {
-  final double vendasDiarias;
-  final double lucroDiario;
-  final double lucroMensal;
-  final double lucroAnual;
-  final double estoqueRestante; // Estoque restante baseado nas vendas
-  final double estoqueTotal; // Novo campo para o estoque total
+// Modelo de dados para o resultado do lucro
+class LucroSupermercadoResultado {
+  final double vendasMensaisEstimadas;
+  final double cmvEstimado; // Custo da Mercadoria Vendida
+  final double gastosOperacionaisVariaveisEstimados;
+  final double custosFixosEstruturaEstimados;
+  final double outrosGastosOperacionaisFixosRef; // Renomeado para clareza
+  final double lucroLiquidoMensalEstimado;
+  // Derivados para exibição
+  final double vendasDiariasEstimadas;
+  final double lucroDiarioEstimado;
+  final double lucroAnualEstimado;
 
-  LucroSupermercado({
-    required this.vendasDiarias,
-    required this.lucroDiario,
-    required this.lucroMensal,
-    required this.lucroAnual,
-    required this.estoqueRestante,
-    required this.estoqueTotal, // Inicialização do estoque total
-  });
+  LucroSupermercadoResultado({
+    required this.vendasMensaisEstimadas,
+    required this.cmvEstimado,
+    required this.gastosOperacionaisVariaveisEstimados,
+    required this.custosFixosEstruturaEstimados,
+    required this.outrosGastosOperacionaisFixosRef,
+    required this.lucroLiquidoMensalEstimado,
+  }) : vendasDiariasEstimadas = vendasMensaisEstimadas / 30,
+       lucroDiarioEstimado = lucroLiquidoMensalEstimado / 30,
+       lucroAnualEstimado = lucroLiquidoMensalEstimado * 12;
 }
 
 class LucroPage extends StatefulWidget {
-  final double totalVendas;
+  final double
+  totalVendasReferencia; // Vendas atuais da HomePage (carrinho), para referência de custos fixos
+  final double
+  gastosOperacionaisFixosIniciais; // Ex: 10% das vendas de referência da HomePage
+  final String estadoSelecionado;
+  final double metrosQuadrados;
 
   const LucroPage({
     super.key,
-    required this.totalVendas,
-    required double gastosOperacionais,
+    required this.totalVendasReferencia,
+    required this.gastosOperacionaisFixosIniciais,
+    required this.estadoSelecionado,
+    required this.metrosQuadrados,
   });
 
   @override
@@ -32,222 +47,382 @@ class LucroPage extends StatefulWidget {
 }
 
 class _LucroPageState extends State<LucroPage> {
-  late double totalVendas;
-  String? selectedState;
-  LucroSupermercado? lucro;
+  late String _estadoAtual;
+  // _vendasMensaisEstimadasMercado será calculado e usado diretamente
+  LucroSupermercadoResultado? _lucroCalculado;
 
-  final Map<String, double> custoUnitarioPorEstado = {
-    'AC': 0.45,
-    'AL': 0.40,
-    'AP': 0.42,
-    'AM': 0.50,
-    'BA': 0.43,
-    'CE': 0.38,
-    'DF': 0.41,
-    'ES': 0.39,
-    'GO': 0.42,
-    'MA': 0.47,
-    'MT': 0.45,
-    'MS': 0.44,
-    'MG': 0.39,
-    'PA': 0.49,
-    'PB': 0.41,
-    'PR': 0.43,
-    'PE': 0.42,
-    'PI': 0.46,
-    'RJ': 0.40,
-    'RN': 0.41,
-    'RS': 0.44,
-    'RO': 0.48,
-    'RR': 0.50,
-    'SC': 0.43,
-    'SP': 0.42,
-    'SE': 0.41,
-    'TO': 0.45,
+  // --- Fatores para Simulação (EXEMPLOS) ---
+  // Estes valores devem ser ajustados com base em dados reais ou pesquisas de mercado
+  final Map<String, double> _fatorMercadoPorEstado = {
+    'AC': 0.7,
+    'AL': 0.8,
+    'AP': 0.75,
+    'AM': 0.65,
+    'BA': 0.9,
+    'CE': 0.85,
+    'DF': 1.1,
+    'ES': 0.95,
+    'GO': 1.0,
+    'MA': 0.7,
+    'MT': 0.9,
+    'MS': 0.85,
+    'MG': 1.05,
+    'PA': 0.8,
+    'PB': 0.8,
+    'PR': 1.1,
+    'PE': 0.9,
+    'PI': 0.75,
+    'RJ': 1.15,
+    'RN': 0.85,
+    'RS': 1.05,
+    'RO': 0.7,
+    'RR': 0.6,
+    'SC': 1.1,
+    'SP': 1.25,
+    'SE': 0.8,
+    'TO': 0.85,
   };
+  final Map<String, double> _custoPercentualProdutoPorEstado = {
+    // % do CMV sobre as vendas
+    'AC': 0.65,
+    'AL': 0.60,
+    'AP': 0.62,
+    'AM': 0.70,
+    'BA': 0.63,
+    'CE': 0.58,
+    'DF': 0.61,
+    'ES': 0.59,
+    'GO': 0.62,
+    'MA': 0.67,
+    'MT': 0.65,
+    'MS': 0.64,
+    'MG': 0.59,
+    'PA': 0.69,
+    'PB': 0.61,
+    'PR': 0.63,
+    'PE': 0.62,
+    'PI': 0.66,
+    'RJ': 0.60,
+    'RN': 0.61,
+    'RS': 0.64,
+    'RO': 0.68, 'RR': 0.70, 'SC': 0.63, 'SP': 0.62, 'SE': 0.61, 'TO': 0.65,
+  };
+  final double _custoFixoPorMetroQuadradoMensal =
+      25.0; // R$/mês por m² (aluguel, iptu, energia base)
+  final double _baseVendasPorMetroQuadradoMensal =
+      700.0; // R$/mês de vendas por m² (potencial base)
+  final double _percentualGastosOperacionaisVariaveis =
+      0.08; // 8% das vendas (embalagens, taxas cartão, etc.)
+  // -------------------------------------------
 
   @override
   void initState() {
     super.initState();
-    totalVendas = widget.totalVendas;
+    _estadoAtual = widget.estadoSelecionado;
+    _estimarVendasEMostrarLucro();
   }
 
-  LucroSupermercado calcularLucro(String estado, double vendasTotais) {
-    double custoMedio =
-        custoUnitarioPorEstado[estado] ??
-        0.42; // Valor padrão para custoUnitario
-    double vendasDiarias = vendasTotais / 30;
-    double lucroDiario = vendasDiarias * (1 - custoMedio);
-    double lucroMensal = lucroDiario * 30;
-    double lucroAnual = lucroMensal * 12;
+  void _estimarVendasEMostrarLucro() {
+    // 1. Estimar Vendas de Mercado
+    double fatorEstado = _fatorMercadoPorEstado[_estadoAtual] ?? 1.0;
+    double variacaoMercado =
+        (Random().nextDouble() * 0.2) - 0.1; // Variação de -10% a +10%
+    double vendasEstimadas =
+        widget.metrosQuadrados *
+        _baseVendasPorMetroQuadradoMensal *
+        fatorEstado *
+        (1 + variacaoMercado);
+    vendasEstimadas = vendasEstimadas.clamp(
+      5000.0,
+      500000.0,
+    ); // Limita o valor para realismo
 
-    // Definindo o estoque total e calculando o estoque restante
-    double estoqueTotal = 10000; // Estoque total fixo (pode ser alterado)
-    double estoqueRestante =
-        estoqueTotal -
-        vendasTotais; // Estoque restante baseado nas vendas totais
+    // 2. Calcular Lucro com base na estimativa
+    _calcularLucroComVendas(vendasEstimadas);
+  }
 
-    return LucroSupermercado(
-      vendasDiarias: vendasDiarias,
-      lucroDiario: lucroDiario,
-      lucroMensal: lucroMensal,
-      lucroAnual: lucroAnual,
-      estoqueRestante: estoqueRestante,
-      estoqueTotal: estoqueTotal, // Passando o valor do estoque total
+  void _calcularLucroComVendas(double vendasMensaisConsideradas) {
+    // Custos Variáveis (escalam com vendasMensaisConsideradas)
+    double custoProdutoPercentual =
+        _custoPercentualProdutoPorEstado[_estadoAtual] ?? 0.60;
+    double cmvEstimado = vendasMensaisConsideradas * custoProdutoPercentual;
+    double gastosOpVariaveisEstimados =
+        vendasMensaisConsideradas * _percentualGastosOperacionaisVariaveis;
+
+    // Custos Fixos
+    double custosFixosEstrutura =
+        widget.metrosQuadrados * _custoFixoPorMetroQuadradoMensal;
+
+    // Outros Gastos Operacionais Fixos (de referência da loja/carrinho atual)
+    // Este valor (widget.gastosOperacionaisFixosIniciais) foi calculado como 10% das vendas de REFERÊNCIA.
+    // Para uma simulação de mercado, é importante entender se este valor é um custo fixo real da operação
+    // ou se deveria também escalar ou ser reavaliado.
+    // Mantendo a lógica de subtraí-lo como um custo fixo de referência:
+    double outrosGastosFixosRef = widget.gastosOperacionaisFixosIniciais;
+
+    // Cálculo do Lucro Líquido Mensal
+    double lucroLiquidoMensal =
+        vendasMensaisConsideradas -
+        cmvEstimado -
+        gastosOpVariaveisEstimados -
+        custosFixosEstrutura -
+        outrosGastosFixosRef; // Subtrai os custos fixos de referência
+
+    setState(() {
+      _lucroCalculado = LucroSupermercadoResultado(
+        vendasMensaisEstimadas: vendasMensaisConsideradas,
+        cmvEstimado: cmvEstimado,
+        gastosOperacionaisVariaveisEstimados: gastosOpVariaveisEstimados,
+        custosFixosEstruturaEstimados: custosFixosEstrutura,
+        outrosGastosOperacionaisFixosRef: outrosGastosFixosRef,
+        lucroLiquidoMensalEstimado: lucroLiquidoMensal,
+      );
+    });
+  }
+
+  Widget _buildInfoCard({
+    required String title,
+    required List<Widget> children,
+    Color? cardColor,
+  }) {
+    return Card(
+      elevation: 2.0,
+      margin: const EdgeInsets.symmetric(vertical: 10.0),
+      color:
+          cardColor ??
+          Theme.of(context).cardTheme.color, // Permite cor customizada
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ), // Consistente com o tema
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[800],
+              ),
+            ),
+            const Divider(height: 20, thickness: 1.2),
+            ...children,
+          ],
+        ),
+      ),
     );
   }
 
-  void calcular() {
-    if (selectedState != null) {
-      setState(() {
-        lucro = calcularLucro(selectedState!, totalVendas);
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, selecione um estado.')),
-      );
-    }
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    Color valueColor = Colors.black87,
+    bool isBold = false,
+    int valueFlex = 1,
+    int labelFlex = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: labelFlex,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 15.5, color: Colors.grey[700]),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: valueFlex,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 15.5,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+                color: valueColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Acesso ao tema para cores, etc.
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Estimativa de Lucro'),
-        backgroundColor: Colors.green,
-      ),
-      body: Padding(
+      appBar: AppBar(title: const Text('Estimativa de Lucro de Mercado')),
+      body: SingleChildScrollView(
+        // Permite rolagem se o conteúdo for extenso
         padding: const EdgeInsets.all(16.0),
-        child: ListView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Vendas Mensais: R\$ ${totalVendas.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Slider(
-              value: totalVendas,
-              min: 1.00,
-              max: 50000.00,
-              divisions: 100,
-              label: 'R\$ ${totalVendas.toStringAsFixed(0)}',
-              onChanged: (value) {
-                setState(() {
-                  totalVendas = value;
-                });
-              },
-            ),
-            DropdownButton<String>(
-              hint: Text('Selecione um estado'),
-              value: selectedState,
-              isExpanded: true,
-              onChanged: (String? newState) {
-                setState(() {
-                  selectedState = newState;
-                });
-              },
-              items:
-                  custoUnitarioPorEstado.keys.map((String estado) {
-                    return DropdownMenuItem<String>(
-                      value: estado,
-                      child: Text(estado),
-                    );
-                  }).toList(),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: calcular,
-              child: Text('Calcular Lucro'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            SizedBox(height: 20),
-            if (lucro != null)
-              DataTable(
-                columnSpacing: 12,
-                columns: const [
-                  DataColumn(
-                    label: Text(
-                      'Tipo',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+            _buildInfoCard(
+              title: 'Parâmetros da Simulação',
+              cardColor: Colors.teal[50], // Cor de fundo leve para este card
+              children: [
+                _buildInfoRow(
+                  'Estado (Ref. Custo/Mercado):',
+                  _estadoAtual,
+                  isBold: true,
+                ),
+                _buildInfoRow(
+                  'Metros Quadrados (Loja):',
+                  '${widget.metrosQuadrados.toStringAsFixed(1)} m²',
+                ),
+                _buildInfoRow(
+                  'Base Vendas Estimada/m²:',
+                  'R\$ ${_baseVendasPorMetroQuadradoMensal.toStringAsFixed(2)} /mês',
+                ),
+                _buildInfoRow(
+                  'Custo Fixo Estimado por m²:',
+                  'R\$ ${_custoFixoPorMetroQuadradoMensal.toStringAsFixed(2)} /mês',
+                ),
+                _buildInfoRow(
+                  'Outros Custos Fixos (Ref.):',
+                  'R\$ ${widget.gastosOperacionaisFixosIniciais.toStringAsFixed(2)} /mês',
+                  labelFlex: 2, // Dar mais espaço para o label
+                ),
+                _buildInfoRow(
+                  '% Custos Oper. Variáveis:',
+                  '${(_percentualGastosOperacionaisVariaveis * 100).toStringAsFixed(0)}% das Vendas Estimadas',
+                  labelFlex: 2,
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(
+                      Icons.casino_outlined,
+                    ), // Ícone diferente para simulação
+                    label: const Text('Nova Simulação de Mercado'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange[700],
                     ),
+                    onPressed: _estimarVendasEMostrarLucro,
                   ),
-                  DataColumn(
-                    label: Text(
-                      'Valor',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    'Nota: A simulação de mercado inclui uma pequena variação aleatória para refletir flutuações.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                ],
-                rows: [
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Estado')),
-                      DataCell(Text(selectedState ?? 'Não selecionado')),
-                    ],
+                ),
+              ],
+            ),
+
+            if (_lucroCalculado != null) ...[
+              _buildInfoCard(
+                title: 'Resultado da Estimativa Detalhada',
+                children: [
+                  _buildInfoRow(
+                    '(+) Vendas Mensais Estimadas (Receita Bruta):',
+                    'R\$ ${_lucroCalculado!.vendasMensaisEstimadas.toStringAsFixed(2)}',
+                    isBold: true,
+                    valueColor: theme.primaryColorDark,
                   ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Vendas Diárias')),
-                      DataCell(
-                        Text('R\$ ${lucro!.vendasDiarias.toStringAsFixed(2)}'),
-                      ),
-                    ],
+                  _buildInfoRow(
+                    '(-) Custo da Mercadoria Vendida (CMV):',
+                    'R\$ ${_lucroCalculado!.cmvEstimado.toStringAsFixed(2)}',
+                    valueColor: Colors.red,
                   ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Lucro Diário')),
-                      DataCell(
-                        Text('R\$ ${lucro!.lucroDiario.toStringAsFixed(2)}'),
-                      ),
-                    ],
+                  _buildInfoRow(
+                    '(-) Gastos Operacionais Variáveis:',
+                    'R\$ ${_lucroCalculado!.gastosOperacionaisVariaveisEstimados.toStringAsFixed(2)}',
+                    valueColor: Colors.red,
                   ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Lucro Mensal')),
-                      DataCell(
-                        Text('R\$ ${lucro!.lucroMensal.toStringAsFixed(2)}'),
-                      ),
-                    ],
+                  _buildInfoRow(
+                    '(-) Custos Fixos de Estrutura (m²):',
+                    'R\$ ${_lucroCalculado!.custosFixosEstruturaEstimados.toStringAsFixed(2)}',
+                    valueColor: Colors.red,
                   ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Lucro Anual')),
-                      DataCell(
-                        Text('R\$ ${lucro!.lucroAnual.toStringAsFixed(2)}'),
-                      ),
-                    ],
+                  _buildInfoRow(
+                    '(-) Outros Gastos Operacionais Fixos (Ref.):',
+                    'R\$ ${_lucroCalculado!.outrosGastosOperacionaisFixosRef.toStringAsFixed(2)}',
+                    valueColor: Colors.red,
                   ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Estoque Total')),
-                      DataCell(
-                        Text('R\$ ${lucro!.estoqueTotal.toStringAsFixed(2)}'),
-                      ),
-                    ],
-                  ),
-                  DataRow(
-                    cells: [
-                      DataCell(Text('Estoque Restante')),
-                      DataCell(
-                        Text(
-                          'R\$ ${lucro!.estoqueRestante.toStringAsFixed(2)}',
-                        ),
-                      ),
-                    ],
+                  const Divider(thickness: 1, height: 20),
+                  _buildInfoRow(
+                    '(=) Lucro Líquido Mensal Estimado:',
+                    'R\$ ${_lucroCalculado!.lucroLiquidoMensalEstimado.toStringAsFixed(2)}',
+                    isBold: true,
+                    valueColor:
+                        _lucroCalculado!.lucroLiquidoMensalEstimado >= 0
+                            ? Colors.green[800]!
+                            : Colors.red[800]!,
+                    labelFlex: 2,
                   ),
                 ],
               ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/');
-              },
-              child: Text('Voltar para Início'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              _buildInfoCard(
+                title: 'Projeções Adicionais',
+                children: [
+                  _buildInfoRow(
+                    'Vendas Brutas Diárias (Média):',
+                    'R\$ ${_lucroCalculado!.vendasDiariasEstimadas.toStringAsFixed(2)}',
+                  ),
+                  _buildInfoRow(
+                    'Lucro Líquido Diário Estimado:',
+                    'R\$ ${_lucroCalculado!.lucroDiarioEstimado.toStringAsFixed(2)}',
+                    valueColor:
+                        _lucroCalculado!.lucroDiarioEstimado >= 0
+                            ? Colors.green[700]!
+                            : Colors.red[700]!,
+                    isBold: true,
+                  ),
+                  _buildInfoRow(
+                    'Lucro Líquido Anual Estimado:',
+                    'R\$ ${_lucroCalculado!.lucroAnualEstimado.toStringAsFixed(2)}',
+                    valueColor:
+                        _lucroCalculado!.lucroAnualEstimado >= 0
+                            ? Colors.green[700]!
+                            : Colors.red[700]!,
+                    isBold: true,
+                  ),
+                ],
+              ),
+            ] else ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 30.0),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 10),
+                      Text(
+                        "Calculando estimativa...",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                label: const Text('Voltar para Produtos'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueGrey[700],
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
               ),
             ),
           ],
