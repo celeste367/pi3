@@ -1,45 +1,38 @@
 import 'package:flutter/material.dart';
-import 'dart:math'; // Para o Random
+import 'package:intl/intl.dart'; // Para formatar data e moeda
 
-// Modelo de dados para o resultado do lucro
-class LucroSupermercadoResultado {
-  final double vendasMensaisEstimadas;
-  final double cmvEstimado; // Custo da Mercadoria Vendida
-  final double gastosOperacionaisVariaveisEstimados;
-  final double custosFixosEstruturaEstimados;
-  final double outrosGastosOperacionaisFixosRef; // Renomeado para clareza
-  final double lucroLiquidoMensalEstimado;
-  // Derivados para exibição
-  final double vendasDiariasEstimadas;
-  final double lucroDiarioEstimado;
-  final double lucroAnualEstimado;
+// Exemplo de impostos por estado (simplificado, consulte legislação!)
+const Map<String, double> kImpostosPorEstado = {
+  'SP': 0.18, 'RJ': 0.20, 'MG': 0.18, 'RS': 0.17, 'PR': 0.19, 'SC': 0.17,
+  'BA': 0.19, 'PE': 0.18, 'CE': 0.20, 'DF': 0.18, 'ES': 0.17, 'GO': 0.17,
+  'MT': 0.17, 'MS': 0.17, 'AL': 0.19, 'AM': 0.20, 'AP': 0.18, 'MA': 0.20,
+  'PA': 0.19, 'PB': 0.20, 'PI': 0.21, 'RN': 0.20, 'RO': 0.175, 'RR': 0.20,
+  'SE': 0.22, 'TO': 0.20, 'AC': 0.19,
+  // Adicione mais estados e alíquotas conforme necessário
+};
 
-  LucroSupermercadoResultado({
-    required this.vendasMensaisEstimadas,
-    required this.cmvEstimado,
-    required this.gastosOperacionaisVariaveisEstimados,
-    required this.custosFixosEstruturaEstimados,
-    required this.outrosGastosOperacionaisFixosRef,
-    required this.lucroLiquidoMensalEstimado,
-  }) : vendasDiariasEstimadas = vendasMensaisEstimadas / 30,
-       lucroDiarioEstimado = lucroLiquidoMensalEstimado / 30,
-       lucroAnualEstimado = lucroLiquidoMensalEstimado * 12;
-}
+// Custo por metro quadrado de referência (simplificado)
+const double kCustoPorMetroQuadradoReferencia =
+    15.0; // Ex: R$15/m² para aluguel/IPTU estimado
 
 class LucroPage extends StatefulWidget {
-  final double
-  totalVendasReferencia; // Vendas atuais da HomePage (carrinho), para referência de custos fixos
-  final double
-  gastosOperacionaisFixosIniciais; // Ex: 10% das vendas de referência da HomePage
+  final List<Map<String, dynamic>> itensDaNotaFiscal;
+  final double totalDaNotaFiscal;
+  final DateTime dataDaVenda;
+  final double gastosOperacionaisFixosIniciais;
   final String estadoSelecionado;
   final double metrosQuadrados;
+  final bool isAnaliseSimulada; // Novo parâmetro
 
   const LucroPage({
     super.key,
-    required this.totalVendasReferencia,
+    required this.itensDaNotaFiscal,
+    required this.totalDaNotaFiscal,
+    required this.dataDaVenda,
     required this.gastosOperacionaisFixosIniciais,
     required this.estadoSelecionado,
     required this.metrosQuadrados,
+    this.isAnaliseSimulada = false, // Default para falso
   });
 
   @override
@@ -47,383 +40,330 @@ class LucroPage extends StatefulWidget {
 }
 
 class _LucroPageState extends State<LucroPage> {
-  late String _estadoAtual;
-  // _vendasMensaisEstimadasMercado será calculado e usado diretamente
-  LucroSupermercadoResultado? _lucroCalculado;
+  late TextEditingController _gastosOperacionaisController;
+  late double _impostoEstadualCalculado;
+  late double _custoInfraestruturaEstimado;
+  late double _lucroBruto;
+  late double _lucroLiquidoEstimado;
 
-  // --- Fatores para Simulação (EXEMPLOS) ---
-  // Estes valores devem ser ajustados com base em dados reais ou pesquisas de mercado
-  final Map<String, double> _fatorMercadoPorEstado = {
-    'AC': 0.7,
-    'AL': 0.8,
-    'AP': 0.75,
-    'AM': 0.65,
-    'BA': 0.9,
-    'CE': 0.85,
-    'DF': 1.1,
-    'ES': 0.95,
-    'GO': 1.0,
-    'MA': 0.7,
-    'MT': 0.9,
-    'MS': 0.85,
-    'MG': 1.05,
-    'PA': 0.8,
-    'PB': 0.8,
-    'PR': 1.1,
-    'PE': 0.9,
-    'PI': 0.75,
-    'RJ': 1.15,
-    'RN': 0.85,
-    'RS': 1.05,
-    'RO': 0.7,
-    'RR': 0.6,
-    'SC': 1.1,
-    'SP': 1.25,
-    'SE': 0.8,
-    'TO': 0.85,
-  };
-  final Map<String, double> _custoPercentualProdutoPorEstado = {
-    // % do CMV sobre as vendas
-    'AC': 0.65,
-    'AL': 0.60,
-    'AP': 0.62,
-    'AM': 0.70,
-    'BA': 0.63,
-    'CE': 0.58,
-    'DF': 0.61,
-    'ES': 0.59,
-    'GO': 0.62,
-    'MA': 0.67,
-    'MT': 0.65,
-    'MS': 0.64,
-    'MG': 0.59,
-    'PA': 0.69,
-    'PB': 0.61,
-    'PR': 0.63,
-    'PE': 0.62,
-    'PI': 0.66,
-    'RJ': 0.60,
-    'RN': 0.61,
-    'RS': 0.64,
-    'RO': 0.68, 'RR': 0.70, 'SC': 0.63, 'SP': 0.62, 'SE': 0.61, 'TO': 0.65,
-  };
-  final double _custoFixoPorMetroQuadradoMensal =
-      25.0; // R$/mês por m² (aluguel, iptu, energia base)
-  final double _baseVendasPorMetroQuadradoMensal =
-      700.0; // R$/mês de vendas por m² (potencial base)
-  final double _percentualGastosOperacionaisVariaveis =
-      0.08; // 8% das vendas (embalagens, taxas cartão, etc.)
-  // -------------------------------------------
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'pt_BR',
+    symbol: 'R\$',
+  );
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 
   @override
   void initState() {
     super.initState();
-    _estadoAtual = widget.estadoSelecionado;
-    _estimarVendasEMostrarLucro();
+    _gastosOperacionaisController = TextEditingController(
+      text: widget.gastosOperacionaisFixosIniciais.toStringAsFixed(2),
+    );
+    _calcularEstimativas();
+    _gastosOperacionaisController.addListener(_calcularEstimativas);
   }
 
-  void _estimarVendasEMostrarLucro() {
-    // 1. Estimar Vendas de Mercado
-    double fatorEstado = _fatorMercadoPorEstado[_estadoAtual] ?? 1.0;
-    double variacaoMercado =
-        (Random().nextDouble() * 0.2) - 0.1; // Variação de -10% a +10%
-    double vendasEstimadas =
-        widget.metrosQuadrados *
-        _baseVendasPorMetroQuadradoMensal *
-        fatorEstado *
-        (1 + variacaoMercado);
-    vendasEstimadas = vendasEstimadas.clamp(
-      5000.0,
-      500000.0,
-    ); // Limita o valor para realismo
-
-    // 2. Calcular Lucro com base na estimativa
-    _calcularLucroComVendas(vendasEstimadas);
+  @override
+  void dispose() {
+    _gastosOperacionaisController.removeListener(_calcularEstimativas);
+    _gastosOperacionaisController.dispose();
+    super.dispose();
   }
 
-  void _calcularLucroComVendas(double vendasMensaisConsideradas) {
-    // Custos Variáveis (escalam com vendasMensaisConsideradas)
-    double custoProdutoPercentual =
-        _custoPercentualProdutoPorEstado[_estadoAtual] ?? 0.60;
-    double cmvEstimado = vendasMensaisConsideradas * custoProdutoPercentual;
-    double gastosOpVariaveisEstimados =
-        vendasMensaisConsideradas * _percentualGastosOperacionaisVariaveis;
+  void _calcularEstimativas() {
+    final double gastosOperacionais =
+        double.tryParse(
+          _gastosOperacionaisController.text.replaceAll(',', '.'),
+        ) ??
+        widget.gastosOperacionaisFixosIniciais;
 
-    // Custos Fixos
-    double custosFixosEstrutura =
-        widget.metrosQuadrados * _custoFixoPorMetroQuadradoMensal;
+    // Imposto estadual (ICMS ou similar - simplificado)
+    final double aliquotaImposto =
+        kImpostosPorEstado[widget.estadoSelecionado] ??
+        0.18; // Padrão 18% se não encontrado
+    _impostoEstadualCalculado = widget.totalDaNotaFiscal * aliquotaImposto;
 
-    // Outros Gastos Operacionais Fixos (de referência da loja/carrinho atual)
-    // Este valor (widget.gastosOperacionaisFixosIniciais) foi calculado como 10% das vendas de REFERÊNCIA.
-    // Para uma simulação de mercado, é importante entender se este valor é um custo fixo real da operação
-    // ou se deveria também escalar ou ser reavaliado.
-    // Mantendo a lógica de subtraí-lo como um custo fixo de referência:
-    double outrosGastosFixosRef = widget.gastosOperacionaisFixosIniciais;
+    // Custo de infraestrutura (aluguel, IPTU, etc. - simplificado)
+    _custoInfraestruturaEstimado =
+        widget.metrosQuadrados * kCustoPorMetroQuadradoReferencia;
 
-    // Cálculo do Lucro Líquido Mensal
-    double lucroLiquidoMensal =
-        vendasMensaisConsideradas -
-        cmvEstimado -
-        gastosOpVariaveisEstimados -
-        custosFixosEstrutura -
-        outrosGastosFixosRef; // Subtrai os custos fixos de referência
+    // Lucro Bruto = Total da Venda - Gastos Operacionais Variáveis (que já estão no controller)
+    // Para simplificar, vamos assumir que os "gastos operacionais" no controller são os custos DIRETOS dos produtos.
+    // E os custos fixos são imposto e infraestrutura.
+    // Neste modelo, o totalDaNotaFiscal JÁ É A RECEITA BRUTA da venda.
+    // Custo dos Produtos Vendidos (CPV) - Para este exemplo, não temos o custo individual de compra dos produtos.
+    // Vamos assumir que o "lucro" é sobre o preço de venda, e os "gastos operacionais" são outros custos.
+    // Uma forma mais realista seria: Lucro Bruto = Total Venda - Custo dos Produtos Vendidos.
+    // E Lucro Líquido = Lucro Bruto - Impostos - Gastos Operacionais Fixos - Custo Infraestrutura.
+    // Por ora, vamos manter a lógica original do app e adicionar os novos custos.
 
-    setState(() {
-      _lucroCalculado = LucroSupermercadoResultado(
-        vendasMensaisEstimadas: vendasMensaisConsideradas,
-        cmvEstimado: cmvEstimado,
-        gastosOperacionaisVariaveisEstimados: gastosOpVariaveisEstimados,
-        custosFixosEstruturaEstimados: custosFixosEstrutura,
-        outrosGastosOperacionaisFixosRef: outrosGastosFixosRef,
-        lucroLiquidoMensalEstimado: lucroLiquidoMensal,
-      );
-    });
+    _lucroBruto = widget.totalDaNotaFiscal; // Receita da venda
+
+    double totalDespesas =
+        gastosOperacionais +
+        _impostoEstadualCalculado +
+        _custoInfraestruturaEstimado;
+    _lucroLiquidoEstimado = _lucroBruto - totalDespesas;
+
+    setState(() {});
   }
 
-  Widget _buildInfoCard({
-    required String title,
-    required List<Widget> children,
-    Color? cardColor,
+  Widget _buildInfoCard(
+    String title,
+    String value, {
+    Color valueColor = Colors.black87,
+    IconData? icon,
   }) {
     return Card(
       elevation: 2.0,
-      margin: const EdgeInsets.symmetric(vertical: 10.0),
-      color:
-          cardColor ??
-          Theme.of(context).cardTheme.color, // Permite cor customizada
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ), // Consistente com o tema
+      margin: const EdgeInsets.symmetric(vertical: 6.0),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[800],
+            if (icon != null) ...[
+              Icon(icon, color: Theme.of(context).primaryColor, size: 28),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            const Divider(height: 20, thickness: 1.2),
-            ...children,
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(
-    String label,
-    String value, {
-    Color valueColor = Colors.black87,
-    bool isBold = false,
-    int valueFlex = 1,
-    int labelFlex = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: labelFlex,
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 15.5, color: Colors.grey[700]),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: valueFlex,
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 15.5,
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                color: valueColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context); // Acesso ao tema para cores, etc.
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Estimativa de Lucro de Mercado')),
+      appBar: AppBar(
+        title: Text(
+          widget.isAnaliseSimulada
+              ? 'Análise de Lucro (Simulação)'
+              : 'Detalhes da Venda e Lucro',
+        ),
+        backgroundColor: Colors.teal, // Theming
+      ),
       body: SingleChildScrollView(
-        // Permite rolagem se o conteúdo for extenso
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildInfoCard(
-              title: 'Parâmetros da Simulação',
-              cardColor: Colors.teal[50], // Cor de fundo leve para este card
-              children: [
-                _buildInfoRow(
-                  'Estado (Ref. Custo/Mercado):',
-                  _estadoAtual,
-                  isBold: true,
-                ),
-                _buildInfoRow(
-                  'Metros Quadrados (Loja):',
-                  '${widget.metrosQuadrados.toStringAsFixed(1)} m²',
-                ),
-                _buildInfoRow(
-                  'Base Vendas Estimada/m²:',
-                  'R\$ ${_baseVendasPorMetroQuadradoMensal.toStringAsFixed(2)} /mês',
-                ),
-                _buildInfoRow(
-                  'Custo Fixo Estimado por m²:',
-                  'R\$ ${_custoFixoPorMetroQuadradoMensal.toStringAsFixed(2)} /mês',
-                ),
-                _buildInfoRow(
-                  'Outros Custos Fixos (Ref.):',
-                  'R\$ ${widget.gastosOperacionaisFixosIniciais.toStringAsFixed(2)} /mês',
-                  labelFlex: 2, // Dar mais espaço para o label
-                ),
-                _buildInfoRow(
-                  '% Custos Oper. Variáveis:',
-                  '${(_percentualGastosOperacionaisVariaveis * 100).toStringAsFixed(0)}% das Vendas Estimadas',
-                  labelFlex: 2,
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(
-                      Icons.casino_outlined,
-                    ), // Ícone diferente para simulação
-                    label: const Text('Nova Simulação de Mercado'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange[700],
+          children: <Widget>[
+            // Seção da Nota Fiscal
+            Card(
+              elevation: 3.0,
+              margin: const EdgeInsets.only(bottom: 20.0),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.isAnaliseSimulada
+                          ? 'Itens da Simulação:'
+                          : 'Nota Fiscal Simplificada',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal[700],
+                      ),
                     ),
-                    onPressed: _estimarVendasEMostrarLucro,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    'Nota: A simulação de mercado inclui uma pequena variação aleatória para refletir flutuações.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Data: ${_dateFormat.format(widget.dataDaVenda)}',
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                        Text(
+                          'Estado: ${widget.estadoSelecionado}',
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
+                    const Divider(height: 20, thickness: 1),
+                    if (widget.itensDaNotaFiscal.isEmpty ||
+                        (widget.isAnaliseSimulada &&
+                            widget.totalDaNotaFiscal == 0))
+                      const Text(
+                        'Nenhum item nesta venda/simulação.',
+                        style: TextStyle(fontStyle: FontStyle.italic),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: widget.itensDaNotaFiscal.length,
+                        itemBuilder: (context, index) {
+                          final item = widget.itensDaNotaFiscal[index];
+                          // Para simulação sem itens, pode não ter imageUrl
+                          final hasImage =
+                              item['imageUrl'] != null &&
+                              (item['imageUrl'] as String).isNotEmpty;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: Row(
+                              children: [
+                                if (hasImage)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4.0),
+                                    child: Image.network(
+                                      item['imageUrl'],
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (ctx, err, st) => Container(
+                                            width: 40,
+                                            height: 40,
+                                            color: Colors.grey[200],
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              size: 20,
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                    ),
+                                  ),
+                                if (hasImage) const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '${item['nome']} (Qtd: ${(item['quantidade'] is double ? (item['quantidade'] as double).toInt() : item['quantidade'])})', // Handle double or int
+                                    style: const TextStyle(fontSize: 15),
+                                  ),
+                                ),
+                                Text(
+                                  _currencyFormat.format(item['subtotal']),
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    const Divider(height: 20, thickness: 1),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'TOTAL DA VENDA: ',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _currencyFormat.format(widget.totalDaNotaFiscal),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
 
-            if (_lucroCalculado != null) ...[
-              _buildInfoCard(
-                title: 'Resultado da Estimativa Detalhada',
-                children: [
-                  _buildInfoRow(
-                    '(+) Vendas Mensais Estimadas (Receita Bruta):',
-                    'R\$ ${_lucroCalculado!.vendasMensaisEstimadas.toStringAsFixed(2)}',
-                    isBold: true,
-                    valueColor: theme.primaryColorDark,
-                  ),
-                  _buildInfoRow(
-                    '(-) Custo da Mercadoria Vendida (CMV):',
-                    'R\$ ${_lucroCalculado!.cmvEstimado.toStringAsFixed(2)}',
-                    valueColor: Colors.red,
-                  ),
-                  _buildInfoRow(
-                    '(-) Gastos Operacionais Variáveis:',
-                    'R\$ ${_lucroCalculado!.gastosOperacionaisVariaveisEstimados.toStringAsFixed(2)}',
-                    valueColor: Colors.red,
-                  ),
-                  _buildInfoRow(
-                    '(-) Custos Fixos de Estrutura (m²):',
-                    'R\$ ${_lucroCalculado!.custosFixosEstruturaEstimados.toStringAsFixed(2)}',
-                    valueColor: Colors.red,
-                  ),
-                  _buildInfoRow(
-                    '(-) Outros Gastos Operacionais Fixos (Ref.):',
-                    'R\$ ${_lucroCalculado!.outrosGastosOperacionaisFixosRef.toStringAsFixed(2)}',
-                    valueColor: Colors.red,
-                  ),
-                  const Divider(thickness: 1, height: 20),
-                  _buildInfoRow(
-                    '(=) Lucro Líquido Mensal Estimado:',
-                    'R\$ ${_lucroCalculado!.lucroLiquidoMensalEstimado.toStringAsFixed(2)}',
-                    isBold: true,
-                    valueColor:
-                        _lucroCalculado!.lucroLiquidoMensalEstimado >= 0
-                            ? Colors.green[800]!
-                            : Colors.red[800]!,
-                    labelFlex: 2,
-                  ),
-                ],
+            Text(
+              'Estimativa de Custos e Lucro',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[700],
               ),
-              _buildInfoCard(
-                title: 'Projeções Adicionais',
-                children: [
-                  _buildInfoRow(
-                    'Vendas Brutas Diárias (Média):',
-                    'R\$ ${_lucroCalculado!.vendasDiariasEstimadas.toStringAsFixed(2)}',
-                  ),
-                  _buildInfoRow(
-                    'Lucro Líquido Diário Estimado:',
-                    'R\$ ${_lucroCalculado!.lucroDiarioEstimado.toStringAsFixed(2)}',
-                    valueColor:
-                        _lucroCalculado!.lucroDiarioEstimado >= 0
-                            ? Colors.green[700]!
-                            : Colors.red[700]!,
-                    isBold: true,
-                  ),
-                  _buildInfoRow(
-                    'Lucro Líquido Anual Estimado:',
-                    'R\$ ${_lucroCalculado!.lucroAnualEstimado.toStringAsFixed(2)}',
-                    valueColor:
-                        _lucroCalculado!.lucroAnualEstimado >= 0
-                            ? Colors.green[700]!
-                            : Colors.red[700]!,
-                    isBold: true,
-                  ),
-                ],
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            // Total da Venda (Receita Bruta)
+            _buildInfoCard(
+              'Receita Bruta da Venda:',
+              _currencyFormat.format(widget.totalDaNotaFiscal),
+              icon: Icons.monetization_on_outlined,
+              valueColor: Colors.green[700]!,
+            ),
+
+            TextField(
+              controller: _gastosOperacionaisController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-            ] else ...[
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 30.0),
-                  child: Column(
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 10),
-                      Text(
-                        "Calculando estimativa...",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
+              decoration: InputDecoration(
+                labelText:
+                    'Custos Operacionais Variáveis (Ex: Custo Produtos, Embalagens)',
+                hintText: '0.00',
+                prefixIcon: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: Theme.of(context).primaryColor,
                 ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixText: 'R\$',
               ),
-            ],
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              'Imposto Estadual Estimado (${widget.estadoSelecionado} - ${(kImpostosPorEstado[widget.estadoSelecionado]! * 100).toStringAsFixed(1)}%):',
+              _currencyFormat.format(_impostoEstadualCalculado),
+              icon: Icons.gavel_outlined,
+              valueColor: Colors.red[700]!,
+            ),
+
+            _buildInfoCard(
+              'Custo de Infraestrutura Estimado (${widget.metrosQuadrados.toStringAsFixed(1)} m²):',
+              _currencyFormat.format(_custoInfraestruturaEstimado),
+              icon: Icons.store_mall_directory_outlined,
+              valueColor: Colors.orange[700]!,
+            ),
+
+            const Divider(height: 24, thickness: 1.5),
+
+            _buildInfoCard(
+              'LUCRO LÍQUIDO ESTIMADO:',
+              _currencyFormat.format(_lucroLiquidoEstimado),
+              icon:
+                  _lucroLiquidoEstimado >= 0
+                      ? Icons.trending_up_outlined
+                      : Icons.trending_down_outlined,
+              valueColor:
+                  _lucroLiquidoEstimado >= 0
+                      ? Colors.blue[700]!
+                      : Colors.red[700]!,
+            ),
+
             const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.arrow_back_ios_new),
-                label: const Text('Voltar para Produtos'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueGrey[700],
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+            Text(
+              'Atenção: Esta é uma estimativa simplificada. Custos reais podem variar. Consulte um contador para análises financeiras precisas.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[700],
+                fontStyle: FontStyle.italic,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

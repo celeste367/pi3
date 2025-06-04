@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
-import 'lucro.dart';
+
 import 'home_page.dart';
 // import 'videos.dart'; // REMOVIDO
 

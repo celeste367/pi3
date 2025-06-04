@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'home_page.dart'; // Certifique-se que o caminho para HomePage está correto
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,68 +13,42 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
-  }
-
-  Future<void> _navigateToHome() async {
-    // Aguarda um tempo para a splash screen
-    await Future.delayed(const Duration(seconds: 4)); // Reduzi um pouco o tempo
-
-    // Verifica se o widget ainda está montado antes de navegar
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
-    }
+    Timer(
+      const Duration(seconds: 3), // Duração da tela de splash
+      () => Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (BuildContext context) => const HomePage()),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Pode usar a cor primária do tema ou uma cor específica
-    // final primaryColor = Theme.of(context).primaryColor;
-
+    // Você pode personalizar esta tela como quiser
     return Scaffold(
-      backgroundColor: Colors.teal[50], // Uma cor suave do tema
+      backgroundColor: Colors.teal, // Cor de fundo da splash
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Lottie.network(
-              'https://lottie.host/48459dc8-c0a3-4c14-99fd-6fee1777f4ed/QFesrhW7Jc.json', // Mantenha seu link Lottie
-              width: 250,
-              height: 250,
-              errorBuilder: (context, error, stackTrace) {
-                // Tratamento de erro para Lottie
-                return Icon(Icons.store, size: 150, color: Colors.teal[300]);
-              },
+          children: <Widget>[
+            // Adicione seu logo aqui se tiver um
+            Icon(
+              Icons.storefront_outlined, // Ícone de exemplo
+              size: 100.0,
+              color: Colors.white,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24.0),
             Text(
-              'Gestor de Supermercado',
+              'Gestor de Produtos', // Nome do seu app
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 28.0,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal[700],
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 16.0),
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
-            const SizedBox(height: 40),
-            // Botão "Ir para Início" removido pois a navegação é automática
-            // e a splash screen é geralmente apenas para branding/carregamento inicial.
-            // Se precisar de um botão de skip:
-            /*
-            ElevatedButton.icon(
-              onPressed: () {
-                if (mounted) {
-                  Navigator.pushReplacementNamed(context, '/home');
-                }
-              },
-              icon: Icon(Icons.skip_next),
-              label: Text('Pular'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal[300]),
-            ),
-            */
           ],
         ),
       ),

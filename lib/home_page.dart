@@ -46,6 +46,17 @@ class Produto {
     this.vendas = 0,
     required this.imageUrl,
   });
+
+  // Helper para criar uma cópia, útil para a nota fiscal
+  Map<String, dynamic> toMapVendidos() {
+    return {
+      'nome': nome,
+      'quantidade': vendas,
+      'precoUnitario': preco,
+      'subtotal': vendas * preco,
+      'imageUrl': imageUrl, // Para exibir imagem na nota também
+    };
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -56,84 +67,93 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Lista de produtos ATUALIZADA com imagens específicas e 5 novos produtos
   final List<Produto> _todosProdutos = [
     Produto(
       nome: 'Arroz Tipo 1 (5kg)',
       preco: 25.00,
       estoque: 150,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Arroz+5kg',
+      imageUrl:
+          'https://www.arenaatacado.com.br/on/demandware.static/-/Sites-storefront-catalog-sv/default/dw6abd898d/Produtos/78166-7896006711155-arroz%20tipo%201%20camil%20pacote%205kg-camil-1.jpg',
     ),
     Produto(
       nome: 'Feijão Carioca (1kg)',
       preco: 8.50,
       estoque: 200,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Feijão+1kg',
+      imageUrl:
+          'https://carrefourbrfood.vtexassets.com/arquivos/ids/194917/466506_1.jpg?v=637272434027000000 ',
     ),
     Produto(
       nome: 'Óleo de Soja (900ml)',
       preco: 7.00,
       estoque: 120,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Óleo+900ml',
+      imageUrl:
+          'https://carrefourbrfood.vtexassets.com/arquivos/ids/211616/141836_1.jpg?v=637272514200130000',
     ),
     Produto(
       nome: 'Açúcar Refinado (1kg)',
       preco: 4.40,
       estoque: 180,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Açúcar+1kg',
+      imageUrl: 'https://m.media-amazon.com/images/I/811HPMq-KjL.jpg',
     ),
     Produto(
       nome: 'Café Tradicional (500g)',
       preco: 15.00,
       estoque: 160,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Café+500g',
+      imageUrl:
+          'https://lojamelitta.vteximg.com.br/arquivos/ids/160281-1000-1000/7891021006125_1--845540a5-083b-4b57-8fde-87681c118e9b-.jpg?v=638169995339870000',
     ),
     Produto(
       nome: 'Leite Integral (1L)',
       preco: 4.80,
       estoque: 300,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Leite+1L',
+      imageUrl:
+          'https://piracanjuba-institucional-prd.s3.sa-east-1.amazonaws.com/product_images/image/leite-integral-piracanjuba-frente-1l-848x1007px-460.webp',
     ),
     Produto(
       nome: 'Pão de Forma Tradicional',
       preco: 6.50,
       estoque: 90,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Pão+Forma',
+      imageUrl:
+          'https://wickbold.com.br/wp-content/uploads/2012/10/pao-tradicional-forma.png',
     ),
-    // --- 5 NOVOS PRODUTOS ---
     Produto(
       nome: 'Maçã Fuji (Kg)',
       preco: 7.99,
       estoque: 70,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Maçã+Kg',
+      imageUrl:
+          'https://superangeloni.vtexassets.com/arquivos/ids/182199/158070_1_zoom.jpg?v=638039741032670000',
     ),
     Produto(
       nome: 'Banana Prata (Kg)',
       preco: 5.50,
       estoque: 85,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Banana+Kg',
+      imageUrl:
+          'https://superirmao.com.br/storage/uploads/D1PW6zRVGSysFMXdgeGha5GCP3VUgXlzXoaOrGJd.png',
     ),
     Produto(
       nome: 'Sabão em Pó (1kg)',
       preco: 12.90,
       estoque: 100,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Sabão+Pó+1kg',
+      imageUrl:
+          'https://images.tcdn.com.br/img/img_prod/767437/sabao_em_po_omo_pacote_1kg_1017_1_20200408102937.jpg',
     ),
     Produto(
       nome: 'Refrigerante Cola (2L)',
       preco: 8.00,
       estoque: 130,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Refrigerante+2L',
+      imageUrl:
+          'https://bretas.vtexassets.com/arquivos/ids/192050-800-auto?v=638375518430000000&width=800&height=auto&aspect=true',
     ),
     Produto(
       nome: 'Biscoito Recheado Chocolate',
       preco: 3.50,
       estoque: 200,
-      imageUrl: 'https://placehold.co/400x300/E8E8E8/555?text=Biscoito',
+      imageUrl:
+          'https://piraque.com.br/wp-content/uploads/2020/11/chocolate.png',
     ),
   ];
-  List<Produto> _produtosFiltrados = [];
 
+  List<Produto> _produtosFiltrados = [];
   final TextEditingController _searchController = TextEditingController();
   late TextEditingController _metrosQuadradosController;
 
@@ -209,7 +229,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _limparCarrinho() {
+  void _limparCarrinho({bool fecharModal = true}) {
+    // Adicionado parâmetro opcional
     setState(() {
       for (var produto in _todosProdutos) {
         if (produto.vendas > 0) {
@@ -218,11 +239,15 @@ class _HomePageState extends State<HomePage> {
         }
       }
     });
-    if (mounted) Navigator.pop(context); // Fecha o modal do carrinho
-    _mostrarFeedback("Carrinho esvaziado!", Colors.blueGrey);
+    if (fecharModal && mounted) Navigator.pop(context);
+    _mostrarFeedback(
+      "Carrinho esvaziado! Itens devolvidos ao estoque.",
+      Colors.blueGrey,
+    );
   }
 
   void _mostrarFeedback(String mensagem, Color cor) {
+    if (!mounted) return; // Evita erro se o widget não estiver na árvore
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -252,6 +277,82 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // --- NOVA FUNÇÃO PARA FINALIZAR COMPRA E GERAR NOTA ---
+  void _finalizarCompraEProcessarNota() {
+    if (_selectedState == null) {
+      _mostrarFeedback(
+        'Selecione um estado para finalizar a compra.',
+        Colors.redAccent,
+      );
+      return;
+    }
+
+    final String metrosQuadradosText = _metrosQuadradosController.text.trim();
+    final double? metrosParsed = double.tryParse(
+      metrosQuadradosText.replaceAll(',', '.'),
+    ); // Aceita ',' ou '.'
+
+    if (metrosParsed == null || metrosParsed <= 0) {
+      _mostrarFeedback(
+        'Por favor, insira um valor válido para metros quadrados.',
+        Colors.redAccent,
+      );
+      return;
+    }
+
+    final List<Produto> itensVendidosOriginais =
+        _todosProdutos.where((p) => p.vendas > 0).toList();
+
+    if (itensVendidosOriginais.isEmpty) {
+      _mostrarFeedback(
+        'Seu carrinho está vazio. Adicione itens para finalizar.',
+        Colors.orangeAccent,
+      );
+      return;
+    }
+
+    // Criar uma lista de Map para a nota fiscal, capturando o estado atual dos itens vendidos
+    final List<Map<String, dynamic>> itensParaNota =
+        itensVendidosOriginais.map((p) => p.toMapVendidos()).toList();
+
+    final double totalDaVenda = _calcularTotalValorCarrinho();
+    final DateTime dataDaVenda = DateTime.now();
+
+    // Gastos operacionais de referência (10% do total da venda)
+    double gastosOperacionaisBase = totalDaVenda * 0.10;
+
+    // Resetar 'vendas' para 0 nos produtos originais
+    // O estoque já foi decrementado ao adicionar ao carrinho.
+    setState(() {
+      for (var produto in itensVendidosOriginais) {
+        // Encontrar o produto na lista _todosProdutos para garantir que estamos alterando o objeto correto
+        final produtoOriginal = _todosProdutos.firstWhere(
+          (p) => p.nome == produto.nome,
+        );
+        produtoOriginal.vendas = 0;
+      }
+    });
+
+    if (mounted) Navigator.pop(context); // Fecha o modal do carrinho
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => LucroPage(
+              itensDaNotaFiscal: itensParaNota,
+              totalDaNotaFiscal: totalDaVenda,
+              dataDaVenda: dataDaVenda,
+              gastosOperacionaisFixosIniciais: gastosOperacionaisBase,
+              estadoSelecionado: _selectedState!,
+              metrosQuadrados: metrosParsed,
+            ),
+      ),
+    );
+    _mostrarFeedback('Compra finalizada com sucesso!', Colors.teal);
+  }
+  // --- FIM DA NOVA FUNÇÃO ---
+
   List<String> _getStockRecommendations() {
     if (_todosProdutos.any((p) => p.estoque < 20)) {
       return [
@@ -263,9 +364,11 @@ class _HomePageState extends State<HomePage> {
         "Atenção: Alguns produtos com estoque baixo (<50 unidades)! Considere reposição.",
       ];
     }
-    if (_todosProdutos.any((p) => p.estoque > 250 && p.vendas == 0)) {
+    // Modificado: Verificar produtos com estoque alto E POUCAS OU NENHUMA VENDA RECENTE (no carrinho atual)
+    if (_todosProdutos.any((p) => p.estoque > 200 && p.vendas < 2)) {
+      // Ajustado para > 200 e vendas < 2
       return [
-        "Alguns produtos com estoque alto (>250 un.) e sem movimentação no carrinho. Considere promoções ou rever compras.",
+        "Alguns produtos com estoque alto (>200 un.) e baixa movimentação no carrinho. Considere promoções ou rever compras futuras.",
       ];
     }
     return [
@@ -349,11 +452,16 @@ class _HomePageState extends State<HomePage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              Text(
+                // Mostrar estoque no dialog também
+                'Estoque: ${produto.estoque.toInt()} unidades',
+                style: TextStyle(fontSize: 15, color: Colors.grey[700]),
+              ),
             ],
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('FECHAR'), // Estilo virá do TextButtonTheme
+              child: const Text('FECHAR'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -367,7 +475,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- FUNCIONALIDADE DO CARRINHO ---
   void _mostrarCarrinho(BuildContext context) {
     final itensNoCarrinho = _todosProdutos.where((p) => p.vendas > 0).toList();
     final totalCompra = _calcularTotalValorCarrinho();
@@ -380,212 +487,233 @@ class _HomePageState extends State<HomePage> {
       ),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       builder: (BuildContext ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 20.0,
+        // Usar StatefulBuilder para que o modal possa ser atualizado
+        // se um item for removido de dentro do modal (não implementado aqui, mas boa prática)
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter modalSetState) {
+            // Recalcular itens e total DENTRO do builder do StatefulBuilder
+            // para refletir mudanças se houvesse botões de +/- no carrinho.
+            // Neste caso, _venderProduto atualiza o estado geral, então o modal
+            // será reconstruído de qualquer forma.
+            final currentItensNoCarrinho =
+                _todosProdutos.where((p) => p.vendas > 0).toList();
+            final currentTotalCompra = _calcularTotalValorCarrinho();
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Meu Carrinho',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal[700],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Colors.grey[700],
-                        ),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20.0,
+                    vertical: 20.0,
                   ),
-                  const Divider(height: 24),
-                  if (itensNoCarrinho.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40.0),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.remove_shopping_cart_outlined,
-                            size: 60,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Seu carrinho está vazio.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: itensNoCarrinho.length,
-                        separatorBuilder:
-                            (context, index) => const Divider(
-                              height: 1,
-                              indent: 16,
-                              endIndent: 16,
-                            ),
-                        itemBuilder: (context, index) {
-                          Produto item = itensNoCarrinho[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10.0),
-                            child: Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                  child: Image.network(
-                                    item.imageUrl,
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (imgCtx, err, st) => Container(
-                                          width: 50,
-                                          height: 50,
-                                          color: Colors.grey[200],
-                                          child: Icon(
-                                            Icons.hide_image_outlined,
-                                            color: Colors.grey[400],
-                                          ),
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.nome,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Qtd: ${item.vendas.toInt()} x R\$ ${item.preco.toStringAsFixed(2)}',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[700],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  'R\$ ${(item.vendas * item.preco).toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  if (itensNoCarrinho.isNotEmpty) ...[
-                    const Divider(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Total:',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                           Text(
-                            'R\$ ${totalCompra.toStringAsFixed(2)}',
+                            'Meu Carrinho',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: Colors.teal[700],
                             ),
                           ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: Colors.grey[700],
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.delete_sweep_outlined),
-                            label: const Text('Limpar'),
-                            onPressed: _limparCarrinho,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.red[700],
-                              side: BorderSide(color: Colors.red[300]!),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
+                      const Divider(height: 24),
+                      if (currentItensNoCarrinho.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40.0),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.remove_shopping_cart_outlined,
+                                size: 60,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                'Seu carrinho está vazio.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 10),
+                        )
+                      else
                         Expanded(
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.payment_outlined),
-                            label: const Text('Finalizar'),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _mostrarFeedback(
-                                'Funcionalidade "Finalizar Compra" não implementada.',
-                                Colors.blueAccent,
+                          child: ListView.separated(
+                            itemCount: currentItensNoCarrinho.length,
+                            separatorBuilder:
+                                (context, index) => const Divider(
+                                  height: 1,
+                                  indent: 16,
+                                  endIndent: 16,
+                                ),
+                            itemBuilder: (context, index) {
+                              Produto item = currentItensNoCarrinho[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10.0,
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8.0),
+                                      child: Image.network(
+                                        item.imageUrl,
+                                        width: 50,
+                                        height: 50,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (imgCtx, err, st) => Container(
+                                              width: 50,
+                                              height: 50,
+                                              color: Colors.grey[200],
+                                              child: Icon(
+                                                Icons.hide_image_outlined,
+                                                color: Colors.grey[400],
+                                              ),
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.nome,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Qtd: ${item.vendas.toInt()} x R\$ ${item.preco.toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      'R\$ ${(item.vendas * item.preco).toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
                             },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
                           ),
                         ),
+                      if (currentItensNoCarrinho.isNotEmpty) ...[
+                        const Divider(height: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Total:',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'R\$ ${currentTotalCompra.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.delete_sweep_outlined),
+                                label: const Text('Limpar'),
+                                // Passar fecharModal: false se o modal não deve fechar automaticamente
+                                onPressed:
+                                    () => _limparCarrinho(fecharModal: true),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red[700],
+                                  side: BorderSide(color: Colors.red[300]!),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.payment_outlined),
+                                label: const Text('Finalizar'),
+                                onPressed:
+                                    _finalizarCompraEProcessarNota, // MODIFICADO AQUI
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
-                  ],
-                ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
-  // --- FIM DA FUNCIONALIDADE DO CARRINHO ---
 
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
       child: TextField(
         controller: _searchController,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
+          // Usar InputDecorationTheme
           hintText: 'Buscar por nome do produto...',
-          prefixIcon: Icon(Icons.search),
+          prefixIcon: const Icon(Icons.search),
+          // border já vem do tema
         ),
       ),
     );
@@ -596,7 +724,9 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: DropdownButtonFormField<String>(
         decoration: const InputDecoration(
+          // Usar InputDecorationTheme
           labelText: 'Estado (p/ cálculo de lucro)',
+          // border já vem do tema
         ),
         hint: const Text('Selecione o Estado'),
         value: _selectedState,
@@ -620,9 +750,10 @@ class _HomePageState extends State<HomePage> {
   Widget _buildProductCard(Produto produto) {
     final chipTheme = Theme.of(context).chipTheme;
     return Card(
+      // CardTheme será aplicado
       child: InkWell(
         onTap: () => _mostrarImagemProduto(context, produto),
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(12.0), // Idealmente do CardTheme
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
@@ -660,9 +791,10 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           produto.nome,
                           style: const TextStyle(
+                            // Pode vir de TextTheme.titleMedium
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                            color: Colors.black87, // Ou cor do tema
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -671,8 +803,11 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           'R\$ ${produto.preco.toStringAsFixed(2)}',
                           style: TextStyle(
+                            // Pode vir de TextTheme.bodyLarge com cor primária
                             fontSize: 15,
-                            color: Colors.teal[700],
+                            color:
+                                Colors
+                                    .teal[700], // Ou Theme.of(context).colorScheme.primary
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -689,8 +824,9 @@ class _HomePageState extends State<HomePage> {
                     label: Text('Carrinho: ${produto.vendas.toInt()}'),
                     avatar: Icon(
                       Icons.shopping_cart_checkout,
-                      size: chipTheme.iconTheme?.size,
+                      size: chipTheme.iconTheme?.size, // Usar tamanho do tema
                     ),
+                    // backgroundColor e labelStyle virão do ChipTheme
                   ),
                   Chip(
                     label: Text('Estoque: ${produto.estoque.toInt()}'),
@@ -703,19 +839,19 @@ class _HomePageState extends State<HomePage> {
                             ? Colors.red[100]
                             : produto.estoque < 20
                             ? Colors.orange[100]
-                            : chipTheme.backgroundColor,
+                            : chipTheme.backgroundColor, // Cor padrão do tema
                     labelStyle:
                         produto.estoque == 0
                             ? TextStyle(
-                              color: Colors.red[800],
+                              color: Colors.red[800], // Ou cor de erro do tema
                               fontWeight: FontWeight.w500,
                             )
                             : produto.estoque < 20
                             ? TextStyle(
-                              color: Colors.orange[800],
+                              color: Colors.orange[800], // Ou uma cor de aviso
                               fontWeight: FontWeight.w500,
                             )
-                            : chipTheme.labelStyle,
+                            : chipTheme.labelStyle, // Estilo padrão do tema
                   ),
                 ],
               ),
@@ -726,14 +862,14 @@ class _HomePageState extends State<HomePage> {
                   IconButton(
                     icon: Icon(
                       Icons.remove_circle_outline,
-                      color: Colors.red[600],
+                      color: Colors.red[600], // Ou cor de erro
                       size: 28,
                     ),
                     tooltip: 'Remover do Carrinho',
                     onPressed:
                         produto.vendas > 0
                             ? () => _venderProduto(produto, true)
-                            : null,
+                            : null, // Desabilitado se não há o que remover
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -741,14 +877,14 @@ class _HomePageState extends State<HomePage> {
                   IconButton(
                     icon: Icon(
                       Icons.add_shopping_cart_rounded,
-                      color: Colors.green[600],
+                      color: Colors.green[600], // Ou cor de sucesso/primária
                       size: 28,
                     ),
                     tooltip: 'Adicionar ao Carrinho',
                     onPressed:
                         produto.estoque > 0
                             ? () => _venderProduto(produto, false)
-                            : null,
+                            : null, // Desabilitado se sem estoque
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -767,20 +903,21 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
+        // AppBarTheme será aplicado
         title: const Text('Produtos da Loja'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: Center(
               child: Badge(
-                // Widget Badge para o contador
                 label: Text(totalItensCarrinho.toString()),
                 isLabelVisible: totalItensCarrinho > 0,
-                backgroundColor: Colors.orangeAccent[700],
+                backgroundColor:
+                    Colors.orangeAccent[700], // Pode ser cor do tema
                 textStyle: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.white, // Ou cor contrastante do tema
                 ),
                 offset: const Offset(-4, 4),
                 child: IconButton(
@@ -811,16 +948,17 @@ class _HomePageState extends State<HomePage> {
                             Icon(
                               Icons.search_off_rounded,
                               size: 70,
-                              color: Colors.grey[400],
+                              color: Colors.grey[400], // Ou cor do tema
                             ),
                             const SizedBox(height: 15),
                             Text(
                               _searchController.text.isNotEmpty
                                   ? 'Nenhum produto encontrado para "${_searchController.text}".'
-                                  : 'Nenhum produto cadastrado.', // Simplificado
+                                  : 'Nenhum produto cadastrado.',
                               style: TextStyle(
+                                // TextTheme.bodyLarge
                                 fontSize: 17,
-                                color: Colors.grey[600],
+                                color: Colors.grey[600], // Ou cor do tema
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -838,9 +976,10 @@ class _HomePageState extends State<HomePage> {
                     ),
           ),
           Container(
+            // Estilo de rodapé
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: Theme.of(context).canvasColor,
+              color: Theme.of(context).canvasColor, // Cor de fundo do tema
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
@@ -860,13 +999,15 @@ class _HomePageState extends State<HomePage> {
                     decimal: true,
                   ),
                   decoration: const InputDecoration(
+                    // InputDecorationTheme
                     labelText: 'Metros Quadrados da Loja',
-                    hintText: 'Ex: 150.5',
+                    hintText: 'Ex: 150.5 ou 150,5',
                     prefixIcon: Icon(Icons.square_foot_outlined),
                   ),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
+                  // OutlinedButtonTheme
                   icon: Icon(
                     _showSuggestions
                         ? Icons.visibility_off_outlined
@@ -880,11 +1021,7 @@ class _HomePageState extends State<HomePage> {
                       _showSuggestions = !_showSuggestions;
                     });
                   },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blueGrey[700],
-                    side: BorderSide(color: Colors.blueGrey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                  // Estilo virá do OutlinedButtonTheme
                 ),
                 if (_showSuggestions)
                   Padding(
@@ -892,9 +1029,13 @@ class _HomePageState extends State<HomePage> {
                     child: Container(
                       padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
-                        color: Colors.blueGrey[50],
+                        color:
+                            Colors
+                                .blueGrey[50], // Ou cor de fundo sutil do tema
                         borderRadius: BorderRadius.circular(8.0),
-                        border: Border.all(color: Colors.blueGrey[200]!),
+                        border: Border.all(
+                          color: Colors.blueGrey[200]!,
+                        ), // Ou cor de borda do tema
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -911,7 +1052,9 @@ class _HomePageState extends State<HomePage> {
                                       children: [
                                         Icon(
                                           Icons.info_outline,
-                                          color: Colors.blueGrey[700],
+                                          color:
+                                              Colors
+                                                  .blueGrey[700], // Cor do tema
                                           size: 18,
                                         ),
                                         const SizedBox(width: 8),
@@ -919,8 +1062,11 @@ class _HomePageState extends State<HomePage> {
                                           child: Text(
                                             tip,
                                             style: TextStyle(
+                                              // TextTheme.bodyMedium
                                               fontSize: 15,
-                                              color: Colors.blueGrey[800],
+                                              color:
+                                                  Colors
+                                                      .blueGrey[800], // Cor do tema
                                             ),
                                           ),
                                         ),
@@ -934,12 +1080,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
+                  // ElevatedButtonTheme
                   icon: const Icon(Icons.analytics_outlined),
                   label: const Text('Análise de Lucro (Estimativa)'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+                  // Estilo virá do ElevatedButtonTheme
                   onPressed: () {
+                    // AÇÃO ORIGINAL DO BOTÃO DE ANÁLISE DE LUCRO
                     if (_selectedState == null) {
                       _mostrarFeedback(
                         'Selecione um estado para a análise de lucro.',
@@ -948,36 +1094,67 @@ class _HomePageState extends State<HomePage> {
                       return;
                     }
                     final String metrosQuadradosText =
-                        _metrosQuadradosController.text.trim();
+                        _metrosQuadradosController.text.trim().replaceAll(
+                          ',',
+                          '.',
+                        );
                     final double? metrosParsed = double.tryParse(
                       metrosQuadradosText,
                     );
 
                     if (metrosParsed == null || metrosParsed <= 0) {
                       _mostrarFeedback(
-                        'Por favor, insira um valor válido para metros quadrados.',
+                        'Por favor, insira um valor válido para metros quadrados para análise.',
                         Colors.redAccent,
                       );
                       return;
                     }
 
-                    double totalVendasAtuaisNoCarrinho =
+                    // Para a análise de lucro, usamos o valor do carrinho ATUAL como referência
+                    // se o usuário quiser apenas simular sem finalizar uma compra.
+                    // Se uma compra foi finalizada, LucroPage usará os dados daquela compra.
+                    double totalVendasParaAnalise =
                         _calcularTotalValorCarrinho();
-                    // Gastos operacionais de referência (10% das vendas atuais do carrinho)
-                    double gastosOperacionaisBase =
-                        totalVendasAtuaisNoCarrinho * 0.10;
+                    double gastosOperacionaisParaAnalise =
+                        totalVendasParaAnalise * 0.10;
+
+                    // Criar uma "nota fiscal" fictícia para a análise, se houver itens no carrinho
+                    final List<Map<String, dynamic>> itensParaAnalise =
+                        _todosProdutos
+                            .where((p) => p.vendas > 0)
+                            .map((p) => p.toMapVendidos())
+                            .toList();
 
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder:
                             (_) => LucroPage(
-                              totalVendasReferencia:
-                                  totalVendasAtuaisNoCarrinho,
+                              // Se houver itens no carrinho, usa-os para a análise
+                              itensDaNotaFiscal:
+                                  itensParaAnalise.isNotEmpty
+                                      ? itensParaAnalise
+                                      : [
+                                        {
+                                          'nome':
+                                              'Venda de Referência (Simulação)',
+                                          'quantidade': 1,
+                                          'precoUnitario':
+                                              totalVendasParaAnalise,
+                                          'subtotal': totalVendasParaAnalise,
+                                          'imageUrl': '',
+                                        },
+                                      ],
+                              totalDaNotaFiscal:
+                                  totalVendasParaAnalise, // total do carrinho atual
+                              dataDaVenda:
+                                  DateTime.now(), // data atual para simulação
                               gastosOperacionaisFixosIniciais:
-                                  gastosOperacionaisBase,
+                                  gastosOperacionaisParaAnalise,
                               estadoSelecionado: _selectedState!,
                               metrosQuadrados: metrosParsed,
+                              isAnaliseSimulada:
+                                  true, // Novo parâmetro para indicar que é simulação
                             ),
                       ),
                     );
