@@ -1,6 +1,7 @@
+// lib/screens/splash_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'home_page.dart'; // Certifique-se que o caminho para HomePage está correto
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,39 +15,36 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(
-      const Duration(seconds: 3), // Duração da tela de splash
-      () => Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (BuildContext context) => const HomePage()),
-      ),
+      const Duration(seconds: 3),
+      // Após 3 segundos, substitui a Splash pela tela de Login
+      () => Navigator.of(context).pushReplacementNamed('/login'),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Você pode personalizar esta tela como quiser
     return Scaffold(
-      backgroundColor: Colors.teal, // Cor de fundo da splash
+      backgroundColor: Colors.teal,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            // Adicione seu logo aqui se tiver um
-            Icon(
-              Icons.storefront_outlined, // Ícone de exemplo
+            const Icon(
+              Icons.storefront_outlined,
               size: 100.0,
               color: Colors.white,
             ),
             const SizedBox(height: 24.0),
-            Text(
-              'Controlador de Estoque', // Nome do seu app
+            const Text(
+              'Controle de Estoque',
               style: TextStyle(
                 fontSize: 28.0,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 16.0),
-            CircularProgressIndicator(
+            const SizedBox(height: 24.0),
+            const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ],

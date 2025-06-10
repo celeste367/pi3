@@ -1,12 +1,10 @@
 {
-	"folders": [
-		{
-			"path": ".."
-		}
-	],
-	"settings": {
-		"java.project.sourcePaths": [
-			"pimoduloapi"
-		]
-	}
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../../piapi"
+        }
+    ]
 }
