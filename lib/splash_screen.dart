@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24.0),
             Text(
-              'Gestor de Produtos', // Nome do seu app
+              'Controlador de Estoque', // Nome do seu app
               style: TextStyle(
                 fontSize: 28.0,
                 fontWeight: FontWeight.bold,

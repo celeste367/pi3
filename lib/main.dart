@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gestor de Produtos',
+      title: 'SCE-Controle de Estoque',
       theme: ThemeData(
         primarySwatch: Colors.teal,
         // Você pode adicionar mais customizações de tema aqui
