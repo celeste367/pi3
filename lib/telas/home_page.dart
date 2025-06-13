@@ -1,8 +1,10 @@
 // lib/screens/home_page.dart
 
 import 'package:flutter/material.dart';
+import '../widgets/app_drawer.dart';
 import 'package:pi3/modelos/produto_model.dart';
 import 'package:pi3/servicos/vendas_service.dart';
+import 'package:pi3/servicos/estoque_servico.dart'; // Importe o novo serviço
 import 'lucro_page.dart';
 import 'nota_fiscal_page.dart';
 
@@ -14,67 +16,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // Obtenha instâncias dos serviços
   final VendasService _vendasService = VendasService();
+  final EstoqueService _estoqueService = EstoqueService();
 
-  // A lista de produtos agora usa o 'preco' como valor base (sem imposto)
-  final List<Produto> _todosProdutos = [
-    Produto(
-      nome: 'Arroz Tipo 1 (5kg)',
-      preco: 23.36,
-      estoque: 150,
-      aliquotaIcms: 0.07,
-      imageUrl:
-          'https://www.arenaatacado.com.br/on/demandware.static/-/Sites-storefront-catalog-sv/default/dw6abd898d/Produtos/78166-7896006711155-arroz%20tipo%201%20camil%20pacote%205kg-camil-1.jpg',
-    ),
-    Produto(
-      nome: 'Feijão Carioca (1kg)',
-      preco: 7.94,
-      estoque: 200,
-      aliquotaIcms: 0.07,
-      imageUrl:
-          'https://carrefourbrfood.vtexassets.com/arquivos/ids/194917/466506_1.jpg?v=637272434027000000',
-    ),
-    Produto(
-      nome: 'Óleo de Soja (900ml)',
-      preco: 6.54,
-      estoque: 120,
-      aliquotaIcms: 0.07,
-      imageUrl:
-          'https://carrefourbrfood.vtexassets.com/arquivos/ids/211616/141836_1.jpg?v=637272514200130000',
-    ),
-    Produto(
-      nome: 'Refrigerante Cola (2L)',
-      preco: 6.78,
-      estoque: 130,
-      aliquotaIcms: 0.18,
-      imageUrl:
-          'https://bretas.vtexassets.com/arquivos/ids/192050-800-auto?v=638375518430000000&width=800&height=auto&aspect=true',
-    ),
-    Produto(
-      nome: 'Açúcar Refinado (1kg)',
-      preco: 4.11,
-      estoque: 180,
-      aliquotaIcms: 0.07,
-      imageUrl: 'https://m.media-amazon.com/images/I/811HPMq-KjL.jpg',
-    ),
-    Produto(
-      nome: 'Sabão em Pó (1kg)',
-      preco: 10.93,
-      estoque: 100,
-      aliquotaIcms: 0.18,
-      imageUrl:
-          'https://images.tcdn.com.br/img/img_prod/767437/sabao_em_po_omo_pacote_1kg_1017_1_20200408102937.jpg',
-    ),
-  ];
+  // A lista de produtos virá do serviço
+  late List<Produto> _todosProdutos;
 
   List<Produto> _produtosFiltrados = [];
   final TextEditingController _searchController = TextEditingController();
-  final bool _showSuggestions = false;
 
-  // MÉTODOS RESTAURADOS E CONSOLIDADOS
   @override
   void initState() {
     super.initState();
+    // Carrega os produtos do serviço
+    _todosProdutos = _estoqueService.getProdutos();
     _produtosFiltrados = List.from(_todosProdutos);
     _searchController.addListener(_filtrarProdutos);
   }
@@ -87,7 +43,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _filtrarProdutos() {
-    String query = _searchController.text.toLowerCase().trim();
+    final query = _searchController.text.toLowerCase().trim();
     setState(() {
       _produtosFiltrados =
           _todosProdutos.where((produto) {
@@ -122,9 +78,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   double _calcularTotalValorCarrinho() {
-    return _todosProdutos.fold(0.0, (sum, p) {
-      return sum + (p.precoFinalComImposto * p.vendas);
-    });
+    return _todosProdutos.fold(0.0, (sum, p) => sum + (p.preco * p.vendas));
   }
 
   void _limparCarrinho({bool fecharModal = true}) {
@@ -137,29 +91,28 @@ class _HomePageState extends State<HomePage> {
       }
     });
     if (fecharModal && mounted) Navigator.pop(context);
-    _mostrarFeedback("Carrinho esvaziado!", Colors.blueGrey);
+    _mostrarFeedback(
+      "Carrinho esvaziado! Itens devolvidos ao estoque.",
+      Colors.blueGrey,
+    );
   }
 
   void _finalizarCompraEProcessarNota() async {
-    final List<Produto> itensNoCarrinho =
-        _todosProdutos.where((p) => p.vendas > 0).toList();
+    final itensNoCarrinho = _todosProdutos.where((p) => p.vendas > 0).toList();
     if (itensNoCarrinho.isEmpty) {
       _mostrarFeedback('Seu carrinho está vazio.', Colors.orangeAccent);
       return;
     }
-
     final vendaRegistrada = await _vendasService.registrarVenda(
       itensNoCarrinho,
     );
-
     setState(() {
       for (var produto in itensNoCarrinho) {
         produto.vendas = 0;
       }
     });
-
     if (mounted) {
-      Navigator.pop(context);
+      Navigator.pop(context); // Fecha o modal do carrinho
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -201,25 +154,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // WIDGET BUILD E MÉTODOS DE UI CONSOLIDADOS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: AppDrawer(), // <- ADICIONADO
       appBar: AppBar(
         title: const Text("Frente de Caixa"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         actions: [
           Center(
-            child: Badge(
-              label: Text(_calcularTotalItensCarrinho().toString()),
-              isLabelVisible: _calcularTotalItensCarrinho() > 0,
-              child: IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined),
-                tooltip: 'Ver Carrinho',
-                onPressed: () => _mostrarCarrinho(context),
+            child: Tooltip(
+              message: "Ver Carrinho",
+              child: Badge(
+                label: Text(_calcularTotalItensCarrinho().toString()),
+                isLabelVisible: _calcularTotalItensCarrinho() > 0,
+                child: IconButton(
+                  icon: const Icon(Icons.shopping_cart_outlined),
+                  onPressed: () => _mostrarCarrinho(context),
+                ),
               ),
             ),
           ),
@@ -234,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                 _produtosFiltrados.isEmpty
                     ? const Center(child: Text("Nenhum produto encontrado."))
                     : ListView.builder(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                       itemCount: _produtosFiltrados.length,
                       itemBuilder: (context, index) {
                         return _buildProductCard(_produtosFiltrados[index]);
@@ -249,12 +200,15 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: TextField(
         controller: _searchController,
         decoration: const InputDecoration(
           hintText: 'Buscar por nome do produto...',
           prefixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12.0)),
+          ),
         ),
       ),
     );
@@ -262,6 +216,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildProductCard(Produto produto) {
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(
@@ -296,12 +251,8 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "R\$ ${produto.precoFinalComImposto.toStringAsFixed(2)}",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.teal.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "R\$ ${produto.preco.toStringAsFixed(2)}",
+                    style: TextStyle(fontSize: 16, color: Colors.teal.shade700),
                   ),
                   Text(
                     "Estoque: ${produto.estoque.toInt()}",
@@ -363,6 +314,9 @@ class _HomePageState extends State<HomePage> {
       child: ElevatedButton.icon(
         icon: const Icon(Icons.analytics_outlined),
         label: const Text('Análise de Lucro (Estimativa)'),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
         onPressed: _navegarParaAnalise,
       ),
     );
@@ -378,23 +332,24 @@ class _HomePageState extends State<HomePage> {
             final itensNoCarrinho =
                 _todosProdutos.where((p) => p.vendas > 0).toList();
             return Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                20,
+                16,
+                MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     "Meu Carrinho",
                     style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   if (itensNoCarrinho.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32.0),
-                        child: Text("O carrinho está vazio."),
-                      ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32.0),
+                      child: Text("O carrinho está vazio."),
                     )
                   else
                     Flexible(
@@ -409,12 +364,12 @@ class _HomePageState extends State<HomePage> {
                             ),
                             title: Text(item.nome),
                             subtitle: Text(
-                              "${item.vendas.toInt()} x R\$ ${item.precoFinalComImposto.toStringAsFixed(2)}",
+                              "${item.vendas.toInt()} x R\$ ${item.preco.toStringAsFixed(2)}",
                             ),
                             trailing: Text(
-                              "R\$ ${(item.vendas * item.precoFinalComImposto).toStringAsFixed(2)}",
+                              "R\$ ${(item.vendas * item.preco).toStringAsFixed(2)}",
                               style: const TextStyle(
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           );
@@ -442,25 +397,32 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: _limparCarrinho,
-                          child: const Text("Limpar"),
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.delete_sweep_outlined),
+                          label: const Text("Limpar"),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            _limparCarrinho();
+                            modalSetState(() {});
+                          },
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.payment_outlined),
+                          label: const Text("Finalizar Venda"),
                           onPressed: _finalizarCompraEProcessarNota,
-                          child: const Text("Finalizar Venda"),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             );

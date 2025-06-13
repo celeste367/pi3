@@ -1,9 +1,9 @@
 // lib/models/produto_model.dart
 
 class Produto {
-  final String nome;
+  late final String nome;
   // ATENÇÃO: 'preco' agora representa o PREÇO BASE (sem impostos).
-  final double preco;
+  late final double preco;
   double estoque;
   double vendas;
   final String imageUrl;
